@@ -1,1 +1,10 @@
 node_modules
+dist
+.wrangler/state
+.env
+.env.local
+.env.*.local
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+.vscode

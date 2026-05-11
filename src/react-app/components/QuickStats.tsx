@@ -6,55 +6,26 @@ interface QuickStatsProps {
 }
 
 export function QuickStats({ restaurants }: QuickStatsProps) {
-  const totalRestaurants = restaurants.length;
-  const uniqueCities = new Set(restaurants.map(r => r.city)).size;
-  const avgRating = totalRestaurants > 0 ? (restaurants.reduce((acc, r) => acc + r.rating, 0) / totalRestaurants).toFixed(1) : "0.0";
-  const activeUsers = new Set(restaurants.map((r) => r.addedBy)).size;
+  const total = restaurants.length;
+  const cities = new Set(restaurants.map((r) => r.city)).size;
+  const avg = total > 0 ? (restaurants.reduce((a, r) => a + r.rating, 0) / total).toFixed(1) : "—";
+  const members = new Set(restaurants.map((r) => r.addedBy)).size;
 
   const stats = [
-    {
-      icon: Utensils,
-      value: totalRestaurants,
-      label: "Restoran",
-      color: "text-primary",
-      bgColor: "bg-primary/10"
-    },
-    {
-      icon: MapPin,
-      value: uniqueCities,
-      label: "Şehir",
-      color: "text-success",
-      bgColor: "bg-success/10"
-    },
-    {
-      icon: Star,
-      value: avgRating,
-      label: "Ort. Puan",
-      color: "text-warning",
-      bgColor: "bg-warning/10"
-    },
-    {
-      icon: Users,
-      value: activeUsers,
-      label: "Ekip Üyesi",
-      color: "text-chart-4",
-      bgColor: "bg-chart-4/10"
-    }
+    { icon: Utensils, value: total, label: "Restoran" },
+    { icon: MapPin,   value: cities,  label: "Şehir"    },
+    { icon: Star,     value: avg,     label: "Ort. Puan" },
+    { icon: Users,    value: members, label: "Üye"       },
   ];
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      {stats.map((stat) => (
-        <div
-          key={stat.label}
-          className="flex items-center gap-3 p-4 rounded-2xl bg-card border border-border/50 shadow-sm"
-        >
-          <div className={`w-10 h-10 rounded-xl ${stat.bgColor} flex items-center justify-center`}>
-            <stat.icon className={`w-5 h-5 ${stat.color}`} />
-          </div>
+    <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+      {stats.map((s) => (
+        <div key={s.label} className="flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-lg px-3 py-2">
+          <s.icon className="w-4 h-4 text-white/80 shrink-0" />
           <div>
-            <p className="text-xl font-bold text-foreground">{stat.value}</p>
-            <p className="text-xs text-muted-foreground">{stat.label}</p>
+            <p className="text-base font-bold text-white leading-none">{s.value}</p>
+            <p className="text-xs text-white/70 leading-none mt-0.5">{s.label}</p>
           </div>
         </div>
       ))}
