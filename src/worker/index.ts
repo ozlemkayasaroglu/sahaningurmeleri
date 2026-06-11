@@ -20,11 +20,14 @@ const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 // ─── Cookie helpers ───────────────────────────────────────────────────────────
 
 function setSessionCookie(c: Parameters<typeof setCookie>[0], token: string) {
+  // secure: false in local dev (http://), true in production (https://)
+  const url = new URL(c.req.url);
+  const isSecure = url.protocol === "https:";
   setCookie(c, SESSION_COOKIE, token, {
     httpOnly: true,
     path: "/",
     sameSite: "Lax",
-    secure: true,
+    secure: isSecure,
     maxAge: SESSION_DURATION_DAYS * 24 * 60 * 60,
   });
 }
