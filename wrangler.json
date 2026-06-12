@@ -17,21 +17,5 @@
       "database_name": "sahaningurmeleri",
       "database_id": "b7b853af-26f0-461a-8118-2d2babe926d2"
     }
-  ],
-	  "r2_buckets": [
-	    {
-	      "binding": "R2_BUCKET",
-	      "bucket_name": "019e1664-1fc8-73e8-92e0-96e0835b236f"
-	    }
-	  ],
-	  "services": [
-	    {
-	      "binding": "EMAILS",
-	      "service": "emails-service",
-	      "entrypoint": "EmailService",
-	      "props": {
-	        "appId": "019e1664-1fc8-73e8-92e0-96e0835b236f"
-	      }
-	    }
-	  ]
-	}
+  ]
+}
