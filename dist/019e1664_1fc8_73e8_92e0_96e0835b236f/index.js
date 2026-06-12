@@ -6590,6 +6590,14 @@ const CreateRestaurantSchema = z.object({
   lng: z.number().optional().default(0),
   photoUrl: z.string().url().optional().or(z.literal(""))
 });
+const CreateReviewSchema = z.object({
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().min(1, "Yorum zorunludur")
+});
+const UpdateProfileSchema = z.object({
+  name: z.string().min(2, "İsim en az 2 karakter olmalıdır"),
+  avatar_url: z.string().url().optional().or(z.literal(""))
+});
 const RegisterSchema = z.object({
   name: z.string().min(2, "İsim en az 2 karakter olmalıdır"),
   email: z.string().email("Geçerli bir e-posta giriniz"),
@@ -6687,7 +6695,9 @@ function mapRestaurant(row) {
     createdAt: row.created_at,
     lat: row.lat,
     lng: row.lng,
-    photoUrl: row.photo_url ?? void 0
+    photoUrl: row.photo_url ?? void 0,
+    averageRating: row.average_rating ?? void 0,
+    reviewCount: row.review_count
   };
 }
 function setSessionCookie(c, token) {
@@ -6761,13 +6771,71 @@ app.post("/api/auth/logout", async (c) => {
 });
 app.get("/api/restaurants", async (c) => {
   const result = await c.env.DB.prepare(
-    `SELECT id, name, city, district, food_type, rating, comment, added_by,
-            added_by_avatar, created_at, lat, lng, photo_url
-     FROM restaurants
-     ORDER BY datetime(created_at) DESC`
+    `SELECT r.id, r.name, r.city, r.district, r.food_type, r.rating, r.comment,
+            r.added_by, r.added_by_avatar, r.added_by_id, r.created_at, r.lat, r.lng, r.photo_url,
+            AVG(rv.rating) AS average_rating,
+            COUNT(rv.id) AS review_count
+     FROM restaurants r
+     LEFT JOIN reviews rv ON rv.restaurant_id = r.id
+     GROUP BY r.id
+     ORDER BY datetime(r.created_at) DESC`
   ).all();
   return c.json(result.results.map(mapRestaurant));
 });
+app.get("/api/restaurants/:id/reviews", async (c) => {
+  const restaurantId = c.req.param("id");
+  const restaurant = await c.env.DB.prepare("SELECT id FROM restaurants WHERE id = ?").bind(restaurantId).first();
+  if (!restaurant) {
+    throw new HTTPException(404, { message: "Restoran bulunamadı" });
+  }
+  const reviews = await c.env.DB.prepare(
+    `SELECT id, restaurant_id, rating, comment, added_by, added_by_avatar, created_at
+     FROM reviews
+     WHERE restaurant_id = ?
+     ORDER BY datetime(created_at) DESC`
+  ).bind(restaurantId).all();
+  return c.json(reviews.results);
+});
+app.post(
+  "/api/restaurants/:id/reviews",
+  authMiddleware,
+  zValidator("json", CreateReviewSchema),
+  async (c) => {
+    const restaurantId = c.req.param("id");
+    const body = c.req.valid("json");
+    const user = c.get("user");
+    const restaurant = await c.env.DB.prepare("SELECT id, added_by, added_by_id FROM restaurants WHERE id = ?").bind(restaurantId).first();
+    if (!restaurant) {
+      throw new HTTPException(404, { message: "Restoran bulunamadı" });
+    }
+    const isOwner = restaurant.added_by_id === user.id || restaurant.added_by === user.name;
+    if (isOwner) {
+      throw new HTTPException(403, { message: "Kendi eklediğiniz restorana yorum yapamazsınız" });
+    }
+    const existingReview = await c.env.DB.prepare(
+      "SELECT id FROM reviews WHERE restaurant_id = ? AND added_by = ?"
+    ).bind(restaurantId, user.name).first();
+    if (existingReview) {
+      throw new HTTPException(409, { message: "Aynı restoran için zaten yorum yaptınız" });
+    }
+    const reviewId = crypto.randomUUID();
+    const createdAt = (/* @__PURE__ */ new Date()).toISOString();
+    await c.env.DB.prepare(
+      `INSERT INTO reviews (
+        id, restaurant_id, rating, comment, added_by, added_by_avatar, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).bind(reviewId, restaurantId, body.rating, body.comment, user.name, user.avatar_url ?? null, createdAt).run();
+    return c.json({
+      id: reviewId,
+      restaurantId,
+      rating: body.rating,
+      comment: body.comment,
+      addedBy: user.name,
+      addedByAvatar: user.avatar_url ?? null,
+      createdAt
+    }, 201);
+  }
+);
 app.post(
   "/api/restaurants",
   authMiddleware,
@@ -6793,8 +6861,8 @@ app.post(
     await c.env.DB.prepare(
       `INSERT INTO restaurants (
         id, name, city, district, food_type, rating, comment, added_by,
-        added_by_avatar, created_at, lat, lng, photo_url
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        added_by_avatar, added_by_id, created_at, lat, lng, photo_url
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind(
       newRestaurant.id,
       newRestaurant.name,
@@ -6805,12 +6873,58 @@ app.post(
       newRestaurant.comment,
       newRestaurant.addedBy,
       newRestaurant.addedByAvatar ?? null,
+      user.id,
       newRestaurant.createdAt,
       newRestaurant.lat,
       newRestaurant.lng,
       newRestaurant.photoUrl ?? null
     ).run();
     return c.json(newRestaurant, 201);
+  }
+);
+app.delete(
+  "/api/restaurants/:id",
+  authMiddleware,
+  async (c) => {
+    const restaurantId = c.req.param("id");
+    const user = c.get("user");
+    const restaurant = await c.env.DB.prepare(
+      "SELECT id, added_by, added_by_id FROM restaurants WHERE id = ?"
+    ).bind(restaurantId).first();
+    if (!restaurant) {
+      throw new HTTPException(404, { message: "Restoran bulunamadı" });
+    }
+    const isOwner = restaurant.added_by_id === user.id || restaurant.added_by === user.name;
+    if (!isOwner) {
+      throw new HTTPException(403, { message: "Bu restorana erişim yetkiniz yok" });
+    }
+    await c.env.DB.prepare("DELETE FROM reviews WHERE restaurant_id = ?").bind(restaurantId).run();
+    await c.env.DB.prepare("DELETE FROM restaurants WHERE id = ?").bind(restaurantId).run();
+    return c.json({ success: true });
+  }
+);
+app.put(
+  "/api/auth/me",
+  authMiddleware,
+  zValidator("json", UpdateProfileSchema),
+  async (c) => {
+    const body = c.req.valid("json");
+    const user = c.get("user");
+    await c.env.DB.prepare(
+      `UPDATE users SET name = ?, avatar_url = ? WHERE id = ?`
+    ).bind(body.name, body.avatar_url || null, user.id).run();
+    await c.env.DB.prepare(
+      `UPDATE restaurants SET added_by = ?, added_by_avatar = ? WHERE added_by_id = ? OR added_by = ?`
+    ).bind(body.name, body.avatar_url || null, user.id, user.name).run();
+    await c.env.DB.prepare(
+      `UPDATE reviews SET added_by_avatar = ? WHERE added_by = ?`
+    ).bind(body.avatar_url || null, user.name).run();
+    const updatedUser = {
+      ...user,
+      name: body.name,
+      avatar_url: body.avatar_url || null
+    };
+    return c.json(updatedUser);
   }
 );
 app.onError((err, c) => {

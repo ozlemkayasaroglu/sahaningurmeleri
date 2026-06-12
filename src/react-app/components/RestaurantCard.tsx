@@ -1,5 +1,6 @@
-import { Star, MapPin, Navigation, User, Clock } from "lucide-react";
+import { Star, MapPin, Navigation, User, Clock, MessageCircle } from "lucide-react";
 import { Badge } from "@/react-app/components/ui/badge";
+import { Button } from "@/react-app/components/ui/button";
 import type { Restaurant } from "@/data/restaurants";
 
 function StarRating({ rating }: { rating: number }) {
@@ -20,7 +21,15 @@ function formatDate(d: string) {
   return new Date(d).toLocaleDateString("tr-TR", { day: "numeric", month: "short", year: "numeric" });
 }
 
-export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
+export function RestaurantCard({
+  restaurant,
+  onReview,
+  canReview,
+}: {
+  restaurant: Restaurant;
+  onReview?: () => void;
+  canReview?: boolean;
+}) {
   const hasCoords = restaurant.lat !== 0 && restaurant.lng !== 0;
   const destination = hasCoords
     ? `${restaurant.lat},${restaurant.lng}`
@@ -71,29 +80,56 @@ export function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
         </p>
 
         {/* Meta */}
-        <div className="flex items-center gap-3 text-xs text-muted-foreground pt-2 border-t border-border">
-          <div className="flex items-center gap-1.5">
-            <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
-              <User size={10} className="text-primary" />
+        <div className="space-y-3 pt-2 border-t border-border">
+          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
+                <User size={10} className="text-primary" />
+              </div>
+              <span className="font-medium text-foreground">{restaurant.addedBy}</span>
             </div>
-            <span className="font-medium text-foreground">{restaurant.addedBy}</span>
+            <div className="flex items-center gap-1">
+              <Clock size={10} />
+              <span>{formatDate(restaurant.createdAt)}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1 ml-auto">
-            <Clock size={10} />
-            <span>{formatDate(restaurant.createdAt)}</span>
-          </div>
+          {typeof restaurant.reviewCount === "number" && restaurant.reviewCount > 0 ? (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/5 px-2 py-1 text-[11px] text-primary">
+                <Star size={12} /> {restaurant.averageRating?.toFixed(1) ?? "—"}
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-muted/10 px-2 py-1 text-[11px]">
+                {restaurant.reviewCount} yorum
+              </span>
+            </div>
+          ) : (
+            <div className="text-xs text-muted-foreground">Henüz yorum yok</div>
+          )}
         </div>
 
         {/* CTA */}
-        <a
-          href={mapsUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center gap-1.5 w-full py-2 rounded-lg border border-primary/30 text-primary text-xs font-semibold hover:bg-primary hover:text-white hover:border-primary transition-all"
-        >
-          <Navigation size={12} />
-          Yol Tarifi Al
-        </a>
+        <div className="flex flex-col gap-2">
+          {canReview && onReview ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full justify-center gap-2"
+              onClick={onReview}
+            >
+              <MessageCircle size={14} />
+              Yorum Yap
+            </Button>
+          ) : null}
+          <a
+            href={mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-1.5 w-full py-2 rounded-lg border border-primary/30 text-primary text-xs font-semibold hover:bg-primary hover:text-white hover:border-primary transition-all"
+          >
+            <Navigation size={12} />
+            Yol Tarifi Al
+          </a>
+        </div>
       </div>
     </div>
   );

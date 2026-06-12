@@ -4,6 +4,7 @@ import { FilterBar } from "@/react-app/components/FilterBar";
 import { RestaurantCard } from "@/react-app/components/RestaurantCard";
 import { QuickStats } from "@/react-app/components/QuickStats";
 import { AddRestaurantModal } from "@/react-app/components/AddRestaurantModal";
+import { ReviewModal } from "@/react-app/components/ReviewModal";
 import { fetchRestaurants, Restaurant } from "@/data/restaurants";
 import { useAuth } from "@/react-app/context/AuthContext";
 import { Search } from "lucide-react";
@@ -19,6 +20,8 @@ export default function Home() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [activeRestaurantId, setActiveRestaurantId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchRestaurants()
@@ -74,6 +77,15 @@ export default function Home() {
         onClose={() => setAddModalOpen(false)}
         onSuccess={(r) => setRestaurants((prev) => [r, ...prev])}
       />
+      <ReviewModal
+        open={reviewModalOpen}
+        restaurantId={activeRestaurantId ?? ""}
+        onClose={() => setReviewModalOpen(false)}
+        onSuccess={async () => {
+          const updated = await fetchRestaurants();
+          setRestaurants(updated);
+        }}
+      />
 
       {/* Hero banner */}
       <div className="hm-gradient">
@@ -124,7 +136,15 @@ export default function Home() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {filteredRestaurants.map((r) => (
-                <RestaurantCard key={r.id} restaurant={r} />
+                <RestaurantCard
+                  key={r.id}
+                  restaurant={r}
+                  canReview={user?.name ? user.name !== r.addedBy : false}
+                  onReview={() => {
+                    setActiveRestaurantId(r.id);
+                    setReviewModalOpen(true);
+                  }}
+                />
               ))}
             </div>
           )

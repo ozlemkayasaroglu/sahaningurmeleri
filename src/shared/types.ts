@@ -15,7 +15,19 @@ export const CreateRestaurantSchema = z.object({
   photoUrl: z.string().url().optional().or(z.literal("")),
 });
 
+export const CreateReviewSchema = z.object({
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().min(1, "Yorum zorunludur"),
+});
+
+export const UpdateProfileSchema = z.object({
+  name: z.string().min(2, "İsim en az 2 karakter olmalıdır"),
+  avatar_url: z.string().url().optional().or(z.literal("")),
+});
+
 export type CreateRestaurantInput = z.infer<typeof CreateRestaurantSchema>;
+export type CreateReviewInput = z.infer<typeof CreateReviewSchema>;
+export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>;
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 

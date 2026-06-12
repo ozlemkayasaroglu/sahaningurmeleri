@@ -12,6 +12,18 @@ export interface Restaurant {
   lat: number;
   lng: number;
   photoUrl?: string;
+  averageRating?: number;
+  reviewCount?: number;
+}
+
+export interface Review {
+  id: string;
+  restaurantId: string;
+  rating: number;
+  comment: string;
+  addedBy: string;
+  addedByAvatar?: string;
+  createdAt: string;
 }
 
 export const foodTypes = [
