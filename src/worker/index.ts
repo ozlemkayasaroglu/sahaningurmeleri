@@ -50,8 +50,8 @@ interface RestaurantRow {
   lat: number;
   lng: number;
   photo_url: string | null;
-  average_rating: number | null;
-  review_count: number;
+  average_rating?: number | null;
+  review_count?: number | null;
 }
 
 function mapRestaurant(row: RestaurantRow): Restaurant {
@@ -70,7 +70,7 @@ function mapRestaurant(row: RestaurantRow): Restaurant {
     lng: row.lng,
     photoUrl: row.photo_url ?? undefined,
     averageRating: row.average_rating ?? undefined,
-    reviewCount: row.review_count,
+    reviewCount: row.review_count ?? 0,
   };
 }
 
@@ -192,18 +192,26 @@ app.post("/api/auth/logout", async (c) => {
 // ─── Restaurant routes ────────────────────────────────────────────────────────
 
 app.get("/api/restaurants", async (c) => {
-  const result = await c.env.DB.prepare(
-    `SELECT r.id, r.name, r.city, r.district, r.food_type, r.rating, r.comment,
-            r.added_by, r.added_by_avatar, r.added_by_id, r.created_at, r.lat, r.lng, r.photo_url,
-            AVG(rv.rating) AS average_rating,
-            COUNT(rv.id) AS review_count
-     FROM restaurants r
-     LEFT JOIN reviews rv ON rv.restaurant_id = r.id
-     GROUP BY r.id
-     ORDER BY datetime(r.created_at) DESC`
-  ).all<RestaurantRow>();
+  try {
+    const result = await c.env.DB.prepare(
+      `SELECT r.id, r.name, r.city, r.district, r.food_type, r.rating, r.comment,
+              r.added_by, r.added_by_avatar, r.added_by_id, r.created_at, r.lat, r.lng, r.photo_url
+       FROM restaurants r
+       ORDER BY datetime(r.created_at) DESC`
+    ).all();
 
-  return c.json(result.results.map(mapRestaurant));
+    // Add default values for aggregates
+    const restaurants = (result.results as any[]).map((r: any) => ({
+      ...r,
+      average_rating: null,
+      review_count: 0,
+    }));
+
+    return c.json(restaurants.map(mapRestaurant));
+  } catch (error) {
+    console.error("Error fetching restaurants:", error);
+    throw new HTTPException(500, { message: "Restoranlar yüklenemedi" });
+  }
 });
 
 app.get("/api/restaurants/:id/reviews", async (c) => {
