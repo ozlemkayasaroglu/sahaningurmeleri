@@ -17,6 +17,56 @@ type Variables = { user: AppUser };
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
+interface Restaurant {
+  id: string;
+  name: string;
+  city: string;
+  district: string;
+  foodType: string;
+  rating: number;
+  comment: string;
+  addedBy: string;
+  addedByAvatar?: string;
+  createdAt: string;
+  lat: number;
+  lng: number;
+  photoUrl?: string;
+}
+
+interface RestaurantRow {
+  id: string;
+  name: string;
+  city: string;
+  district: string;
+  food_type: string;
+  rating: number;
+  comment: string;
+  added_by: string;
+  added_by_avatar: string | null;
+  created_at: string;
+  lat: number;
+  lng: number;
+  photo_url: string | null;
+}
+
+function mapRestaurant(row: RestaurantRow): Restaurant {
+  return {
+    id: row.id,
+    name: row.name,
+    city: row.city,
+    district: row.district,
+    foodType: row.food_type,
+    rating: row.rating,
+    comment: row.comment,
+    addedBy: row.added_by,
+    addedByAvatar: row.added_by_avatar ?? undefined,
+    createdAt: row.created_at,
+    lat: row.lat,
+    lng: row.lng,
+    photoUrl: row.photo_url ?? undefined,
+  };
+}
+
 // ─── Cookie helpers ───────────────────────────────────────────────────────────
 
 function setSessionCookie(c: Parameters<typeof setCookie>[0], token: string) {
@@ -126,16 +176,22 @@ app.post("/api/auth/logout", async (c) => {
 
 // ─── Restaurant routes ────────────────────────────────────────────────────────
 
-app.get("/api/restaurants", (c) => {
-  // Stub data — migrate to D1 later
-  return c.json(restaurants);
+app.get("/api/restaurants", async (c) => {
+  const result = await c.env.DB.prepare(
+    `SELECT id, name, city, district, food_type, rating, comment, added_by,
+            added_by_avatar, created_at, lat, lng, photo_url
+     FROM restaurants
+     ORDER BY datetime(created_at) DESC`
+  ).all<RestaurantRow>();
+
+  return c.json(result.results.map(mapRestaurant));
 });
 
 app.post(
   "/api/restaurants",
   authMiddleware,
   zValidator("json", CreateRestaurantSchema),
-  (c) => {
+  async (c) => {
     const body = c.req.valid("json");
     const user = c.get("user");
 
@@ -154,7 +210,30 @@ app.post(
       lng: body.lng ?? 0,
       photoUrl: body.photoUrl || undefined,
     };
-    restaurants.push(newRestaurant);
+
+    await c.env.DB.prepare(
+      `INSERT INTO restaurants (
+        id, name, city, district, food_type, rating, comment, added_by,
+        added_by_avatar, created_at, lat, lng, photo_url
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+      .bind(
+        newRestaurant.id,
+        newRestaurant.name,
+        newRestaurant.city,
+        newRestaurant.district,
+        newRestaurant.foodType,
+        newRestaurant.rating,
+        newRestaurant.comment,
+        newRestaurant.addedBy,
+        newRestaurant.addedByAvatar ?? null,
+        newRestaurant.createdAt,
+        newRestaurant.lat,
+        newRestaurant.lng,
+        newRestaurant.photoUrl ?? null
+      )
+      .run();
+
     return c.json(newRestaurant, 201);
   }
 );
@@ -170,79 +249,3 @@ app.onError((err, c) => {
 });
 
 export default app;
-
-// ─── Stub restaurant data ─────────────────────────────────────────────────────
-
-interface Restaurant {
-  id: string;
-  name: string;
-  city: string;
-  district: string;
-  foodType: string;
-  rating: number;
-  comment: string;
-  addedBy: string;
-  addedByAvatar?: string;
-  createdAt: string;
-  lat: number;
-  lng: number;
-  photoUrl?: string;
-}
-
-const restaurants: Restaurant[] = [
-  {
-    id: "1",
-    name: "Beyti Restaurant",
-    city: "İstanbul",
-    district: "Florya",
-    foodType: "Kebap",
-    rating: 5,
-    comment: "Efsanevi Beyti kebabı! Müşteri toplantıları için ideal, servis çok profesyonel.",
-    addedBy: "Ahmet Yılmaz",
-    createdAt: "2024-01-15T10:30:00Z",
-    lat: 40.9761,
-    lng: 28.7894,
-    photoUrl: "https://images.unsplash.com/photo-1544025162-d76694265947?w=400",
-  },
-  {
-    id: "2",
-    name: "Çiya Sofrası",
-    city: "İstanbul",
-    district: "Kadıköy",
-    foodType: "Ev Yemekleri",
-    rating: 5,
-    comment: "Anadolu mutfağının en iyisi. Her gün değişen menü, ev yapımı tatlar.",
-    addedBy: "Elif Kaya",
-    createdAt: "2024-01-14T12:00:00Z",
-    lat: 40.9903,
-    lng: 29.0289,
-    photoUrl: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400",
-  },
-  {
-    id: "3",
-    name: "İmam Çağdaş",
-    city: "Gaziantep",
-    district: "Şahinbey",
-    foodType: "Kebap",
-    rating: 5,
-    comment: "Antep mutfağının kalbi! Lahmacun ve kebap seçenekleri muhteşem.",
-    addedBy: "Mehmet Demir",
-    createdAt: "2024-01-12T14:30:00Z",
-    lat: 37.0662,
-    lng: 37.3833,
-    photoUrl: "https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=400",
-  },
-  {
-    id: "4",
-    name: "Tarihi Süleymaniye Hamamı Restoran",
-    city: "İstanbul",
-    district: "Fatih",
-    foodType: "Ev Yemekleri",
-    rating: 4,
-    comment: "Kuru fasulye pilav efsanesi! Hızlı öğle yemeği için mükemmel.",
-    addedBy: "Zeynep Arslan",
-    createdAt: "2024-01-10T11:00:00Z",
-    lat: 41.0162,
-    lng: 28.9639,
-  },
-];
