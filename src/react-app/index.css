@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Leaflet harita CSS */
+@import "leaflet/dist/leaflet.css";
+
 @layer base {
   :root {
     /* ── Hakan Makina Kurumsal Tema ──────────────────────────────
