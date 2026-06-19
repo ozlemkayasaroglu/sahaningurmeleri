@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import type { Map as LeafletMap, Marker } from "leaflet";
 import type { Restaurant } from "@/data/restaurants";
 
 // Türkiye şehir koordinatları (koordinatsız restoranlar için fallback)
@@ -40,18 +41,107 @@ interface RestaurantMapProps {
 
 export function RestaurantMap({ restaurants, onMarkerClick }: RestaurantMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<ReturnType<typeof import("leaflet")["map"]> | null>(null);
+  const mapInstanceRef = useRef<LeafletMap | null>(null);
+  const markersRef = useRef<Marker[]>([]);
+  const mapReadyRef = useRef(false);
 
+  const updateMarkers = (L: typeof import("leaflet"), map: LeafletMap) => {
+    // Mevcut marker'ları temizle
+    markersRef.current.forEach((m) => m.remove());
+    markersRef.current = [];
+
+    const createIcon = (rating: number) => {
+      const color = rating >= 5 ? "#204080" : rating >= 4 ? "#0090c0" : "#64748b";
+      return L.divIcon({
+        className: "",
+        html: `
+          <div style="
+            background: ${color};
+            width: 32px;
+            height: 32px;
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            border: 3px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          ">
+            <span style="
+              transform: rotate(45deg);
+              font-size: 13px;
+              font-weight: bold;
+              color: white;
+              display: block;
+              text-align: center;
+              line-height: 26px;
+            ">${rating}</span>
+          </div>
+        `,
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+        popupAnchor: [0, -36],
+      });
+    };
+
+    restaurants.forEach((r) => {
+      let lat = r.lat;
+      let lng = r.lng;
+      if (!lat || !lng || (lat === 0 && lng === 0)) {
+        const coords = cityCoords[r.city];
+        if (!coords) return;
+        lat = coords[0];
+        lng = coords[1];
+      }
+
+      const marker = L.marker([lat, lng], { icon: createIcon(r.rating) });
+
+      const stars = "★".repeat(r.rating) + "☆".repeat(5 - r.rating);
+      marker.bindPopup(`
+        <div style="min-width: 180px; font-family: Inter, sans-serif;">
+          ${r.photoUrl ? `<img src="${r.photoUrl}" style="width:100%;height:90px;object-fit:cover;border-radius:6px;margin-bottom:8px;" />` : ""}
+          <div style="font-weight:700;font-size:14px;color:#1e293b;margin-bottom:2px;">${r.name}</div>
+          <div style="font-size:12px;color:#64748b;margin-bottom:4px;">📍 ${r.district}, ${r.city}</div>
+          <div style="font-size:12px;color:#f59e0b;margin-bottom:4px;">${stars} <span style="color:#64748b">(${r.rating}/5)</span></div>
+          <div style="font-size:11px;color:#475569;border-top:1px solid #e2e8f0;padding-top:6px;margin-top:4px;">
+            🍽 ${r.foodType} &nbsp;·&nbsp; 👤 ${r.addedBy}
+          </div>
+          <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" 
+             target="_blank"
+             style="display:block;margin-top:8px;padding:6px;background:#204080;color:white;text-align:center;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;">
+            🧭 Yol Tarifi Al
+          </a>
+        </div>
+      `, { maxWidth: 220 });
+
+      if (onMarkerClick) {
+        marker.on("click", () => onMarkerClick(r));
+      }
+
+      marker.addTo(map);
+      markersRef.current.push(marker);
+    });
+
+    if (restaurants.length > 0) {
+      const validCoords: [number, number][] = restaurants
+        .map((r) => {
+          if (r.lat && r.lng && !(r.lat === 0 && r.lng === 0)) return [r.lat, r.lng] as [number, number];
+          return cityCoords[r.city] ?? null;
+        })
+        .filter(Boolean) as [number, number][];
+
+      if (validCoords.length > 0) {
+        map.fitBounds(L.latLngBounds(validCoords), { padding: [40, 40], maxZoom: 12 });
+      }
+    }
+  };
+
+  // Haritayı bir kez oluştur
   useEffect(() => {
     if (!mapRef.current) return;
 
-    // Leaflet'i dynamic import ile yükle (SSR sorunlarını önlemek için)
     import("leaflet").then((L) => {
-      // Eğer map zaten oluşturulduysa temizle
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-      }
+      if (mapInstanceRef.current) return; // zaten oluşturulmuş
 
       // Leaflet default icon fix
       // @ts-expect-error leaflet internal
@@ -62,7 +152,6 @@ export function RestaurantMap({ restaurants, onMarkerClick }: RestaurantMapProps
         shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
       });
 
-      // Haritayı oluştur — Türkiye merkezi
       const map = L.map(mapRef.current!, {
         center: [39.0, 35.0],
         zoom: 6,
@@ -70,110 +159,35 @@ export function RestaurantMap({ restaurants, onMarkerClick }: RestaurantMapProps
       });
 
       mapInstanceRef.current = map;
+      setTimeout(() => map.invalidateSize(), 100);
 
-      // OpenStreetMap tile layer (ücretsiz)
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         maxZoom: 18,
       }).addTo(map);
 
-      // Özel marker ikonu
-      const createIcon = (rating: number) => {
-        const color = rating >= 5 ? "#204080" : rating >= 4 ? "#0090c0" : "#64748b";
-        return L.divIcon({
-          className: "",
-          html: `
-            <div style="
-              background: ${color};
-              width: 32px;
-              height: 32px;
-              border-radius: 50% 50% 50% 0;
-              transform: rotate(-45deg);
-              border: 3px solid white;
-              box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-            ">
-              <span style="
-                transform: rotate(45deg);
-                font-size: 13px;
-                font-weight: bold;
-                color: white;
-                display: block;
-                text-align: center;
-                line-height: 26px;
-              ">${rating}</span>
-            </div>
-          `,
-          iconSize: [32, 32],
-          iconAnchor: [16, 32],
-          popupAnchor: [0, -36],
-        });
-      };
-
-      // Her restoran için marker ekle
-      restaurants.forEach((r) => {
-        // Koordinat yoksa şehir merkezini kullan
-        let lat = r.lat;
-        let lng = r.lng;
-        if (!lat || !lng || (lat === 0 && lng === 0)) {
-          const coords = cityCoords[r.city];
-          if (!coords) return; // şehir bulunamazsa atla
-          lat = coords[0];
-          lng = coords[1];
-        }
-
-        const marker = L.marker([lat, lng], { icon: createIcon(r.rating) });
-
-        // Popup içeriği
-        const stars = "★".repeat(r.rating) + "☆".repeat(5 - r.rating);
-        marker.bindPopup(`
-          <div style="min-width: 180px; font-family: Inter, sans-serif;">
-            ${r.photoUrl ? `<img src="${r.photoUrl}" style="width:100%;height:90px;object-fit:cover;border-radius:6px;margin-bottom:8px;" />` : ""}
-            <div style="font-weight:700;font-size:14px;color:#1e293b;margin-bottom:2px;">${r.name}</div>
-            <div style="font-size:12px;color:#64748b;margin-bottom:4px;">📍 ${r.district}, ${r.city}</div>
-            <div style="font-size:12px;color:#f59e0b;margin-bottom:4px;">${stars} <span style="color:#64748b">(${r.rating}/5)</span></div>
-            <div style="font-size:11px;color:#475569;border-top:1px solid #e2e8f0;padding-top:6px;margin-top:4px;">
-              🍽 ${r.foodType} &nbsp;·&nbsp; 👤 ${r.addedBy}
-            </div>
-            <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}" 
-               target="_blank"
-               style="display:block;margin-top:8px;padding:6px;background:#204080;color:white;text-align:center;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;">
-              🧭 Yol Tarifi Al
-            </a>
-          </div>
-        `, { maxWidth: 220 });
-
-        if (onMarkerClick) {
-          marker.on("click", () => onMarkerClick(r));
-        }
-
-        marker.addTo(map);
-      });
-
-      // Eğer marker varsa hepsini gösterecek şekilde zoom yap
-      if (restaurants.length > 0) {
-        const validCoords: [number, number][] = restaurants
-          .map((r) => {
-            if (r.lat && r.lng && !(r.lat === 0 && r.lng === 0)) return [r.lat, r.lng] as [number, number];
-            return cityCoords[r.city] ?? null;
-          })
-          .filter(Boolean) as [number, number][];
-
-        if (validCoords.length > 0) {
-          map.fitBounds(L.latLngBounds(validCoords), { padding: [40, 40], maxZoom: 12 });
-        }
-      }
+      // Harita hazır — ilk marker'ları ekle
+      mapReadyRef.current = true;
+      updateMarkers(L, map);
     });
 
     return () => {
+      mapReadyRef.current = false;
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
     };
-  }, [restaurants, onMarkerClick]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Restoranlar değişince sadece marker'ları güncelle (harita zaten hazırsa)
+  useEffect(() => {
+    if (!mapReadyRef.current || !mapInstanceRef.current) return;
+
+    import("leaflet").then((L) => {
+      updateMarkers(L, mapInstanceRef.current!);
+    });
+  }, [restaurants, onMarkerClick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div
