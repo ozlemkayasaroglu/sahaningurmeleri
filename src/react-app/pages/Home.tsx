@@ -131,7 +131,7 @@ export default function Home() {
           )
         ) : (
           <div className="rounded-xl border border-border overflow-hidden shadow-sm" style={{ height: "560px" }}>
-            <RestaurantMap restaurants={filteredRestaurants} />
+            <RestaurantMap restaurants={restaurants} />
           </div>
         )}
       </main>
