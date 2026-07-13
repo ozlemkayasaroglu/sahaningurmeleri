@@ -8,10 +8,11 @@ import {
   hashPassword,
   verifyPassword,
   generateSessionToken,
+  roleForEmail,
   SESSION_COOKIE,
   SESSION_DURATION_DAYS,
 } from "./auth";
-import { authMiddleware } from "./middleware";
+import { authMiddleware, requireStaff } from "./middleware";
 
 type Variables = { user: AppUser };
 
@@ -105,11 +106,12 @@ app.post("/api/auth/register", zValidator("json", RegisterSchema), async (c) => 
 
   const id = crypto.randomUUID();
   const passwordHash = await hashPassword(password);
+  const role = roleForEmail(email);
 
   await c.env.DB.prepare(
-    "INSERT INTO users (id, name, email, password_hash) VALUES (?, ?, ?, ?)"
+    "INSERT INTO users (id, name, email, password_hash, role) VALUES (?, ?, ?, ?, ?)"
   )
-    .bind(id, name, email.toLowerCase(), passwordHash)
+    .bind(id, name, email.toLowerCase(), passwordHash, role)
     .run();
 
   // Auto-login after register
@@ -128,7 +130,7 @@ app.post("/api/auth/register", zValidator("json", RegisterSchema), async (c) => 
     name,
     email: email.toLowerCase(),
     avatar_url: null,
-    role: "member",
+    role,
     created_at: new Date().toISOString(),
   } satisfies AppUser, 201);
 });
@@ -295,6 +297,7 @@ app.post(
 app.post(
   "/api/restaurants",
   authMiddleware,
+  requireStaff,
   zValidator("json", CreateRestaurantSchema),
   async (c) => {
     const body = c.req.valid("json");

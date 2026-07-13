@@ -28,3 +28,14 @@ export const authMiddleware = createMiddleware<{
   c.set("user", row);
   await next();
 });
+
+export const requireStaff = createMiddleware<{
+  Bindings: Env;
+  Variables: Variables;
+}>(async (c, next) => {
+  const user = c.get("user");
+  if (user.role !== "staff") {
+    throw new HTTPException(403, { message: "Bu işlem için yalnızca şirket personeli yetkilidir" });
+  }
+  await next();
+});

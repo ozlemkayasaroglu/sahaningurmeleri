@@ -15,21 +15,33 @@ export function Header({ activeView, onViewChange, onAddClick }: HeaderProps) {
 
   const firstName = user?.name?.split(" ")[0] ?? "";
   const initials = user?.name
-    ? user.name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
+    ? user.name
+        .split(" ")
+        .map((n) => n[0])
+        .slice(0, 2)
+        .join("")
+        .toUpperCase()
     : "?";
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-border shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16">
-
           {/* Logo */}
           <div className="flex items-center gap-4">
-            <img src="/hakanlogo.png" alt="Hakan Makina" className="h-9 w-auto" />
+            <img
+              src="/hakanlogo.png"
+              alt="Hakan Makina"
+              className="h-16 w-auto"
+            />
             <div className="hidden lg:block w-px h-8 bg-border" />
             <div className="hidden lg:block">
-              <p className="text-sm font-semibold text-foreground leading-none">Saha Günlüğü</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Restoran Keşif Platformu</p>
+              <p className="text-md font-semibold text-foreground leading-none">
+                Saha Günlüğü
+              </p>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Restoran Keşif Platformu
+              </p>
             </div>
           </div>
 
@@ -82,16 +94,19 @@ export function Header({ activeView, onViewChange, onAddClick }: HeaderProps) {
                 />
               ) : (
                 <div className="w-8 h-8 rounded-full hm-gradient flex items-center justify-center shadow-sm">
-                  <span className="text-xs font-bold text-white">{initials}</span>
+                  <span className="text-xs font-bold text-white">
+                    {initials}
+                  </span>
                 </div>
               )}
               <div className="text-left">
-                <p className="text-sm font-semibold text-foreground leading-none">{firstName}</p>
+                <p className="text-sm font-semibold text-foreground leading-none">
+                  {firstName}
+                </p>
                 <p className="text-xs text-muted-foreground mt-0.5">Profilim</p>
               </div>
             </button>
           </div>
-
         </div>
       </div>
     </header>

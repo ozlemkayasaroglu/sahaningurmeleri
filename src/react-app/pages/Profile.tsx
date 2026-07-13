@@ -1,12 +1,24 @@
 import { useAuth } from "@/react-app/context/AuthContext";
 import { useNavigate } from "react-router";
-import { ArrowLeft, LogOut, Mail, Calendar, Star, UtensilsCrossed, MapPin } from "lucide-react";
+import {
+  ArrowLeft,
+  LogOut,
+  Mail,
+  Calendar,
+  Star,
+  UtensilsCrossed,
+  MapPin,
+} from "lucide-react";
 import { Button } from "@/react-app/components/ui/button";
 import { useState, useEffect, type FormEvent } from "react";
 import type { Restaurant } from "@/data/restaurants";
 
 function formatDate(d: string) {
-  return new Date(d).toLocaleDateString("tr-TR", { day: "numeric", month: "long", year: "numeric" });
+  return new Date(d).toLocaleDateString("tr-TR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 export default function ProfilePage() {
@@ -90,12 +102,16 @@ export default function ProfilePage() {
     }
 
     try {
-      const response = await fetch(`/api/restaurants/${restaurantId}`, { method: "DELETE" });
+      const response = await fetch(`/api/restaurants/${restaurantId}`, {
+        method: "DELETE",
+      });
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData?.error || "Restoran silinemedi");
       }
-      setRestaurants((current) => current.filter((restaurant) => restaurant.id !== restaurantId));
+      setRestaurants((current) =>
+        current.filter((restaurant) => restaurant.id !== restaurantId),
+      );
       setProfileMessage("Restoran silindi.");
     } catch (error) {
       console.error(error);
@@ -104,11 +120,19 @@ export default function ProfilePage() {
   };
 
   const myRestaurants = restaurants.filter((r) => r.addedBy === user?.name);
-  const avgRating = myRestaurants.length > 0
-    ? (myRestaurants.reduce((s, r) => s + r.rating, 0) / myRestaurants.length).toFixed(1)
-    : "—";
+  const avgRating =
+    myRestaurants.length > 0
+      ? (
+          myRestaurants.reduce((s, r) => s + r.rating, 0) / myRestaurants.length
+        ).toFixed(1)
+      : "—";
   const initials = user?.name
-    ? user.name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
+    ? user.name
+        .split(" ")
+        .map((n) => n[0])
+        .slice(0, 2)
+        .join("")
+        .toUpperCase()
     : "?";
 
   return (
@@ -117,19 +141,35 @@ export default function ProfilePage() {
       <header className="sticky top-0 z-50 bg-white border-b border-border shadow-sm">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
-            <button onClick={() => navigate("/")}
-              className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors text-sm font-medium">
+            <button
+              onClick={() => navigate("/")}
+              className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors text-sm font-medium"
+            >
               <ArrowLeft className="w-4 h-4" />
               Ana Sayfa
             </button>
 
-            <img src="/hakanlogo.png" alt="Hakan Makina" className="h-8 w-auto" />
+            <img
+              src="/hakanlogo.png"
+              alt="Hakan Makina"
+              className="h-16 w-auto"
+            />
 
-            <Button variant="outline" size="sm" onClick={handleLogout} disabled={loggingOut}
-              className="rounded-lg text-destructive border-destructive/30 hover:bg-destructive hover:text-white hover:border-destructive text-xs">
-              {loggingOut
-                ? <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                : <><LogOut className="w-3.5 h-3.5 sm:mr-1.5" /><span className="hidden sm:inline">Çıkış Yap</span></>}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+              disabled={loggingOut}
+              className="rounded-lg text-destructive border-destructive/30 hover:bg-destructive hover:text-white hover:border-destructive text-xs"
+            >
+              {loggingOut ? (
+                <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <LogOut className="w-3.5 h-3.5 sm:mr-1.5" />
+                  <span className="hidden sm:inline">Çıkış Yap</span>
+                </>
+              )}
             </Button>
           </div>
         </div>
@@ -140,11 +180,16 @@ export default function ProfilePage() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
           <div className="flex items-center gap-5">
             {user?.avatar_url ? (
-              <img src={user.avatar_url} alt={user.name}
-                className="w-20 h-20 rounded-2xl object-cover ring-4 ring-white/30 shrink-0" />
+              <img
+                src={user.avatar_url}
+                alt={user.name}
+                className="w-20 h-20 rounded-2xl object-cover ring-4 ring-white/30 shrink-0"
+              />
             ) : (
               <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center ring-4 ring-white/30 shrink-0">
-                <span className="text-2xl font-bold text-white">{initials}</span>
+                <span className="text-2xl font-bold text-white">
+                  {initials}
+                </span>
               </div>
             )}
             <div>
@@ -168,10 +213,14 @@ export default function ProfilePage() {
         <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
           <div className="space-y-5">
             <div className="bg-white rounded-xl border border-border p-5">
-              <h2 className="text-base font-semibold text-foreground mb-3">Profil Bilgileri</h2>
+              <h2 className="text-base font-semibold text-foreground mb-3">
+                Profil Bilgileri
+              </h2>
               <form onSubmit={handleProfileSave} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Ad Soyad</label>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Ad Soyad
+                  </label>
                   <input
                     type="text"
                     value={name}
@@ -180,7 +229,9 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">Profil Fotoğraf URL</label>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Profil Fotoğraf URL
+                  </label>
                   <input
                     type="url"
                     value={avatarUrl}
@@ -189,9 +240,15 @@ export default function ProfilePage() {
                   />
                 </div>
                 {profileMessage ? (
-                  <div className="rounded-xl border border-border p-3 text-sm text-foreground bg-muted/30">{profileMessage}</div>
+                  <div className="rounded-xl border border-border p-3 text-sm text-foreground bg-muted/30">
+                    {profileMessage}
+                  </div>
                 ) : null}
-                <Button type="submit" disabled={savingProfile} className="rounded-lg hm-gradient text-white border-0">
+                <Button
+                  type="submit"
+                  disabled={savingProfile}
+                  className="rounded-lg hm-gradient text-white border-0"
+                >
                   {savingProfile ? "Kaydediliyor..." : "Profili Güncelle"}
                 </Button>
               </form>
@@ -199,11 +256,16 @@ export default function ProfilePage() {
 
             {/* My Restaurants */}
             <div>
-              <h2 className="text-base font-semibold text-foreground mb-3">Eklediğim Restoranlar</h2>
+              <h2 className="text-base font-semibold text-foreground mb-3">
+                Eklediğim Restoranlar
+              </h2>
               {loading ? (
                 <div className="space-y-2">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="bg-white rounded-xl border border-border p-4 animate-pulse">
+                    <div
+                      key={i}
+                      className="bg-white rounded-xl border border-border p-4 animate-pulse"
+                    >
                       <div className="h-4 bg-muted rounded w-1/3 mb-2" />
                       <div className="h-3 bg-muted rounded w-1/2" />
                     </div>
@@ -214,19 +276,34 @@ export default function ProfilePage() {
                   <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
                     <UtensilsCrossed className="w-6 h-6 text-muted-foreground" />
                   </div>
-                  <p className="font-medium text-foreground">Henüz restoran eklemediniz</p>
-                  <p className="text-muted-foreground text-sm mt-1">Ana sayfadan yeni bir restoran ekleyebilirsiniz.</p>
-                  <Button onClick={() => navigate("/")} size="sm" className="mt-4 rounded-lg hm-gradient text-white border-0">
+                  <p className="font-medium text-foreground">
+                    Henüz restoran eklemediniz
+                  </p>
+                  <p className="text-muted-foreground text-sm mt-1">
+                    Ana sayfadan yeni bir restoran ekleyebilirsiniz.
+                  </p>
+                  <Button
+                    onClick={() => navigate("/")}
+                    size="sm"
+                    className="mt-4 rounded-lg hm-gradient text-white border-0"
+                  >
                     Restoran Ekle
                   </Button>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {myRestaurants.map((r) => (
-                    <div key={r.id} className="bg-white rounded-xl border border-border p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between hover:border-primary/30 transition-colors">
+                    <div
+                      key={r.id}
+                      className="bg-white rounded-xl border border-border p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between hover:border-primary/30 transition-colors"
+                    >
                       <div className="flex items-center gap-4">
                         {r.photoUrl ? (
-                          <img src={r.photoUrl} alt={r.name} className="w-14 h-14 rounded-lg object-cover shrink-0" />
+                          <img
+                            src={r.photoUrl}
+                            alt={r.name}
+                            className="w-14 h-14 rounded-lg object-cover shrink-0"
+                          />
                         ) : (
                           <div className="w-14 h-14 rounded-lg hm-gradient-subtle border border-primary/15 flex items-center justify-center shrink-0">
                             <UtensilsCrossed className="w-6 h-6 text-primary" />
@@ -234,16 +311,22 @@ export default function ProfilePage() {
                         )}
                         <div className="min-w-0">
                           <div className="flex items-start justify-between gap-2">
-                            <h3 className="font-semibold text-foreground truncate text-sm">{r.name}</h3>
+                            <h3 className="font-semibold text-foreground truncate text-sm">
+                              {r.name}
+                            </h3>
                             <div className="flex items-center gap-0.5 shrink-0">
                               <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                              <span className="text-sm font-semibold text-foreground">{r.rating}</span>
+                              <span className="text-sm font-semibold text-foreground">
+                                {r.rating}
+                              </span>
                             </div>
                           </div>
                           <p className="text-xs text-muted-foreground truncate mt-0.5">
                             {r.district}, {r.city} · {r.foodType}
                           </p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{formatDate(r.createdAt)}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {formatDate(r.createdAt)}
+                          </p>
                         </div>
                       </div>
                       <Button
@@ -265,29 +348,72 @@ export default function ProfilePage() {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-3">
               {[
-                { icon: UtensilsCrossed, val: loading ? "—" : myRestaurants.length, lbl: "Eklenen Restoran", color: "text-primary", bg: "bg-primary/8" },
-                { icon: Star,            val: loading ? "—" : avgRating,             lbl: "Ortalama Puan",   color: "text-amber-500", bg: "bg-amber-50" },
-                { icon: MapPin,          val: loading ? "—" : new Set(myRestaurants.map((r) => r.city)).size, lbl: "Farklı Şehir", color: "text-accent", bg: "bg-accent/8" },
+                {
+                  icon: UtensilsCrossed,
+                  val: loading ? "—" : myRestaurants.length,
+                  lbl: "Eklenen Restoran",
+                  color: "text-primary",
+                  bg: "bg-primary/8",
+                },
+                {
+                  icon: Star,
+                  val: loading ? "—" : avgRating,
+                  lbl: "Ortalama Puan",
+                  color: "text-amber-500",
+                  bg: "bg-amber-50",
+                },
+                {
+                  icon: MapPin,
+                  val: loading
+                    ? "—"
+                    : new Set(myRestaurants.map((r) => r.city)).size,
+                  lbl: "Farklı Şehir",
+                  color: "text-accent",
+                  bg: "bg-accent/8",
+                },
               ].map((s) => (
-                <div key={s.lbl} className="bg-white rounded-xl border border-border p-4 text-center">
-                  <div className={`w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center mx-auto mb-2`}>
+                <div
+                  key={s.lbl}
+                  className="bg-white rounded-xl border border-border p-4 text-center"
+                >
+                  <div
+                    className={`w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center mx-auto mb-2`}
+                  >
                     <s.icon className={`w-5 h-5 ${s.color}`} />
                   </div>
                   <p className="text-2xl font-bold text-foreground">{s.val}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{s.lbl}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {s.lbl}
+                  </p>
                 </div>
               ))}
             </div>
 
             {/* Danger zone */}
             <div className="bg-white rounded-xl border border-destructive/20 p-5">
-              <h3 className="font-semibold text-foreground mb-1">Hesap İşlemleri</h3>
-              <p className="text-sm text-muted-foreground mb-4">Oturumunuzu güvenli bir şekilde sonlandırın.</p>
-              <Button variant="outline" onClick={handleLogout} disabled={loggingOut}
-                className="rounded-lg border-destructive/30 text-destructive hover:bg-destructive hover:text-white hover:border-destructive">
-                {loggingOut
-                  ? <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />Çıkış yapılıyor...</span>
-                  : <><LogOut className="w-4 h-4 mr-2" />Çıkış Yap</>}
+              <h3 className="font-semibold text-foreground mb-1">
+                Hesap İşlemleri
+              </h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Oturumunuzu güvenli bir şekilde sonlandırın.
+              </p>
+              <Button
+                variant="outline"
+                onClick={handleLogout}
+                disabled={loggingOut}
+                className="rounded-lg border-destructive/30 text-destructive hover:bg-destructive hover:text-white hover:border-destructive"
+              >
+                {loggingOut ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    Çıkış yapılıyor...
+                  </span>
+                ) : (
+                  <>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Çıkış Yap
+                  </>
+                )}
               </Button>
             </div>
           </div>

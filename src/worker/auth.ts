@@ -70,3 +70,11 @@ export function generateSessionToken(): string {
 
 export const SESSION_COOKIE = "saha_session";
 export const SESSION_DURATION_DAYS = 30;
+
+// ─── Role assignment ──────────────────────────────────────────────────────────
+
+const STAFF_EMAIL_DOMAIN = "@hakanismakinalari.com";
+
+export function roleForEmail(email: string): "staff" | "customer" {
+  return email.toLowerCase().endsWith(STAFF_EMAIL_DOMAIN) ? "staff" : "customer";
+}

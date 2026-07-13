@@ -31,7 +31,10 @@ export default function LoginPage() {
         body: JSON.stringify({ email: loginEmail, password: loginPassword }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Giriş başarısız"); return; }
+      if (!res.ok) {
+        setError(data.error || "Giriş başarısız");
+        return;
+      }
       await fetchUser();
     } catch {
       setError("Bağlantı hatası. Lütfen tekrar deneyin.");
@@ -43,16 +46,26 @@ export default function LoginPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (regPassword !== regPassword2) { setError("Şifreler eşleşmiyor"); return; }
+    if (regPassword !== regPassword2) {
+      setError("Şifreler eşleşmiyor");
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: regName, email: regEmail, password: regPassword }),
+        body: JSON.stringify({
+          name: regName,
+          email: regEmail,
+          password: regPassword,
+        }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Kayıt başarısız"); return; }
+      if (!res.ok) {
+        setError(data.error || "Kayıt başarısız");
+        return;
+      }
       await fetchUser();
     } catch {
       setError("Bağlantı hatası. Lütfen tekrar deneyin.");
@@ -61,7 +74,8 @@ export default function LoginPage() {
     }
   };
 
-  const inputCls = "w-full px-3.5 py-2.5 rounded-lg border border-border bg-white text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all";
+  const inputCls =
+    "w-full px-3.5 py-2.5 rounded-lg border border-border bg-white text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary transition-all";
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -74,11 +88,16 @@ export default function LoginPage() {
 
         <div className="relative z-10 text-center">
           <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 mb-8 inline-block">
-            <img src="/hakanlogo.png" alt="Hakan Makina" className="h-24 w-auto" />
+            <img
+              src="/hakanlogo.png"
+              alt="Hakan Makina"
+              className="h-24 w-auto"
+            />
           </div>
           <h2 className="text-3xl font-bold text-white mb-3">Saha Günlüğü</h2>
           <p className="text-white/75 text-lg leading-relaxed max-w-sm">
-            Satış ekibinin keşfettiği en iyi restoranları tek platformda görün ve paylaşın.
+            Satış ekibinin keşfettiği en iyi restoranları tek platformda görün
+            ve paylaşın.
           </p>
 
           <div className="mt-10 grid grid-cols-3 gap-4 text-center">
@@ -101,15 +120,26 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Mobil logo */}
           <div className="lg:hidden text-center mb-8">
-            <img src="/hakanlogo.png" alt="Hakan Makina" className="h-16 w-auto mx-auto mb-3" />
-            <h1 className="text-xl font-bold text-foreground">Saha Günlüğü</h1>
+            <Link>
+              <img
+                src="/hakanlogo.png"
+                alt="Hakan Makina"
+                className="h-16 w-auto mx-auto mb-3"
+              />
+              <h1 className="text-xl font-bold text-foreground">
+                Saha Günlüğü
+              </h1>
+            </Link>
           </div>
 
           <div className="bg-white rounded-2xl border border-border shadow-lg overflow-hidden">
             {/* Tab bar */}
             <div className="flex border-b border-border">
               <button
-                onClick={() => { setTab("login"); setError(""); }}
+                onClick={() => {
+                  setTab("login");
+                  setError("");
+                }}
                 className={`flex-1 flex items-center justify-center gap-2 py-4 text-sm font-semibold transition-all ${
                   tab === "login"
                     ? "text-primary border-b-2 border-primary bg-primary/3"
@@ -120,7 +150,10 @@ export default function LoginPage() {
                 Giriş Yap
               </button>
               <button
-                onClick={() => { setTab("register"); setError(""); }}
+                onClick={() => {
+                  setTab("register");
+                  setError("");
+                }}
                 className={`flex-1 flex items-center justify-center gap-2 py-4 text-sm font-semibold transition-all ${
                   tab === "register"
                     ? "text-primary border-b-2 border-primary bg-primary/3"
@@ -143,27 +176,60 @@ export default function LoginPage() {
               {tab === "login" && (
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-foreground">E-posta</label>
-                    <input type="email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)}
-                      placeholder="ornek@hakanmakina.com" required className={inputCls} />
+                    <label className="text-sm font-medium text-foreground">
+                      E-posta
+                    </label>
+                    <input
+                      type="email"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      placeholder="ornek@sirketiniz.com"
+                      required
+                      className={inputCls}
+                    />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-foreground">Şifre</label>
+                    <label className="text-sm font-medium text-foreground">
+                      Şifre
+                    </label>
                     <div className="relative">
-                      <input type={showPassword ? "text" : "password"} value={loginPassword}
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
-                        placeholder="••••••••" required className={`${inputCls} pr-10`} />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        placeholder="••••••••"
+                        required
+                        className={`${inputCls} pr-10`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
                       </button>
                     </div>
                   </div>
-                  <Button type="submit" disabled={loading}
-                    className="w-full h-11 hm-gradient text-white hover:opacity-90 border-0 rounded-lg font-semibold shadow-md mt-2">
-                    {loading
-                      ? <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Giriş yapılıyor...</span>
-                      : <span className="flex items-center gap-2"><LogIn className="w-4 h-4" />Giriş Yap</span>}
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full h-11 hm-gradient text-white hover:opacity-90 border-0 rounded-lg font-semibold shadow-md mt-2"
+                  >
+                    {loading ? (
+                      <span className="flex items-center gap-2">
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Giriş yapılıyor...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <LogIn className="w-4 h-4" />
+                        Giriş Yap
+                      </span>
+                    )}
                   </Button>
                 </form>
               )}
@@ -171,42 +237,93 @@ export default function LoginPage() {
               {tab === "register" && (
                 <form onSubmit={handleRegister} className="space-y-4">
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-foreground">Ad Soyad</label>
-                    <input type="text" value={regName} onChange={(e) => setRegName(e.target.value)}
-                      placeholder="Ahmet Yılmaz" required minLength={2} className={inputCls} />
+                    <label className="text-sm font-medium text-foreground">
+                      Ad Soyad
+                    </label>
+                    <input
+                      type="text"
+                      value={regName}
+                      onChange={(e) => setRegName(e.target.value)}
+                      placeholder="Ahmet Yılmaz"
+                      required
+                      minLength={2}
+                      className={inputCls}
+                    />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-foreground">E-posta</label>
-                    <input type="email" value={regEmail} onChange={(e) => setRegEmail(e.target.value)}
-                      placeholder="ornek@hakanmakina.com" required className={inputCls} />
+                    <label className="text-sm font-medium text-foreground">
+                      E-posta
+                    </label>
+                    <input
+                      type="email"
+                      value={regEmail}
+                      onChange={(e) => setRegEmail(e.target.value)}
+                      placeholder="ornek@sirketiniz.com"
+                      required
+                      className={inputCls}
+                    />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-foreground">Şifre</label>
+                    <label className="text-sm font-medium text-foreground">
+                      Şifre
+                    </label>
                     <div className="relative">
-                      <input type={showPassword ? "text" : "password"} value={regPassword}
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={regPassword}
                         onChange={(e) => setRegPassword(e.target.value)}
-                        placeholder="En az 6 karakter" required minLength={6} className={`${inputCls} pr-10`} />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        placeholder="En az 6 karakter"
+                        required
+                        minLength={6}
+                        className={`${inputCls} pr-10`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
                       </button>
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-foreground">Şifre Tekrar</label>
-                    <input type={showPassword ? "text" : "password"} value={regPassword2}
+                    <label className="text-sm font-medium text-foreground">
+                      Şifre Tekrar
+                    </label>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={regPassword2}
                       onChange={(e) => setRegPassword2(e.target.value)}
-                      placeholder="Şifrenizi tekrar girin" required
-                      className={`${inputCls} ${regPassword2 && regPassword !== regPassword2 ? "border-destructive focus:ring-destructive/40" : ""}`} />
+                      placeholder="Şifrenizi tekrar girin"
+                      required
+                      className={`${inputCls} ${regPassword2 && regPassword !== regPassword2 ? "border-destructive focus:ring-destructive/40" : ""}`}
+                    />
                     {regPassword2 && regPassword !== regPassword2 && (
-                      <p className="text-xs text-destructive">Şifreler eşleşmiyor</p>
+                      <p className="text-xs text-destructive">
+                        Şifreler eşleşmiyor
+                      </p>
                     )}
                   </div>
-                  <Button type="submit" disabled={loading}
-                    className="w-full h-11 hm-gradient text-white hover:opacity-90 border-0 rounded-lg font-semibold shadow-md mt-2">
-                    {loading
-                      ? <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Kayıt olunuyor...</span>
-                      : <span className="flex items-center gap-2"><UserPlus className="w-4 h-4" />Kayıt Ol</span>}
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full h-11 hm-gradient text-white hover:opacity-90 border-0 rounded-lg font-semibold shadow-md mt-2"
+                  >
+                    {loading ? (
+                      <span className="flex items-center gap-2">
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Kayıt olunuyor...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <UserPlus className="w-4 h-4" />
+                        Kayıt Ol
+                      </span>
+                    )}
                   </Button>
                 </form>
               )}
