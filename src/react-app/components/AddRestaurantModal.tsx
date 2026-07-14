@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Star, MapPin } from "lucide-react";
+import { X, MapPin } from "lucide-react";
 import { Button } from "@/react-app/components/ui/button";
 import { foodTypes, turkishCities, Restaurant } from "@/data/restaurants";
 import { CreateRestaurantInput } from "@/shared/types";
@@ -20,7 +20,6 @@ export function AddRestaurantModal({ open, onClose, onSuccess }: AddRestaurantMo
     city: "",
     district: "",
     foodType: "",
-    rating: 5,
     comment: "",
     addedBy: autoName,
     lat: 0,
@@ -68,7 +67,7 @@ export function AddRestaurantModal({ open, onClose, onSuccess }: AddRestaurantMo
 
       const created: Restaurant = await response.json();
       onSuccess(created);
-      setForm({ name: "", city: "", district: "", foodType: "", rating: 5, comment: "", addedBy: autoName, lat: 0, lng: 0, photoUrl: "" });
+      setForm({ name: "", city: "", district: "", foodType: "", comment: "", addedBy: autoName, lat: 0, lng: 0, photoUrl: "" });
       setErrors({});
       onClose();
     } catch (err) {
@@ -102,7 +101,7 @@ export function AddRestaurantModal({ open, onClose, onSuccess }: AddRestaurantMo
             </div>
             <div>
               <h2 className="font-semibold text-foreground">Restoran Ekle</h2>
-              <p className="text-xs text-muted-foreground">Yeni bir keşif paylaş</p>
+              <p className="text-xs text-muted-foreground">Yeni bir keşif paylaş. Puanlama, ekibin bırakacağı yorumların ortalamasıyla oluşur.</p>
             </div>
           </div>
           <button
@@ -188,30 +187,6 @@ export function AddRestaurantModal({ open, onClose, onSuccess }: AddRestaurantMo
               ))}
             </select>
             {errors.foodType && <p className="text-xs text-destructive">{errors.foodType}</p>}
-          </div>
-
-          {/* Puan */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-foreground">Puan</label>
-            <div className="flex items-center gap-1">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  type="button"
-                  onClick={() => set("rating", star)}
-                  className="p-1 transition-transform hover:scale-110"
-                >
-                  <Star
-                    className={`w-7 h-7 transition-colors ${
-                      star <= form.rating
-                        ? "fill-yellow-400 text-yellow-400"
-                        : "text-muted-foreground/30"
-                    }`}
-                  />
-                </button>
-              ))}
-              <span className="ml-2 text-sm text-muted-foreground">{form.rating}/5</span>
-            </div>
           </div>
 
           {/* Yorum */}

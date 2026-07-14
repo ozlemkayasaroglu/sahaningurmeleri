@@ -4,7 +4,7 @@ import { FilterBar } from "@/react-app/components/FilterBar";
 import { RestaurantCard } from "@/react-app/components/RestaurantCard";
 import { QuickStats } from "@/react-app/components/QuickStats";
 import { AddRestaurantModal } from "@/react-app/components/AddRestaurantModal";
-import { StaffOnlyModal } from "@/react-app/components/StaffOnlyModal";
+import { ReviewModal } from "@/react-app/components/ReviewModal";
 import { RestaurantMap } from "@/react-app/components/RestaurantMap";
 import { fetchRestaurants, Restaurant } from "@/data/restaurants";
 import { useAuth } from "@/react-app/context/AuthContext";
@@ -21,7 +21,7 @@ export default function Home() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [addModalOpen, setAddModalOpen] = useState(false);
-  const [staffOnlyModalOpen, setStaffOnlyModalOpen] = useState(false);
+  const [reviewTarget, setReviewTarget] = useState<Restaurant | null>(null);
 
   useEffect(() => {
     fetchRestaurants()
@@ -45,7 +45,9 @@ export default function Home() {
     if (selectedCity && selectedCity !== "all")
       result = result.filter((r) => r.city === selectedCity);
     if (selectedRating && selectedRating !== "all")
-      result = result.filter((r) => r.rating >= parseInt(selectedRating));
+      result = result.filter(
+        (r) => (r.averageRating ?? 0) >= parseInt(selectedRating),
+      );
     if (selectedUser && selectedUser !== "all")
       result = result.filter((r) => r.addedBy === selectedUser);
     switch (sortBy) {
@@ -56,7 +58,7 @@ export default function Home() {
         );
         break;
       case "rating":
-        result.sort((a, b) => b.rating - a.rating);
+        result.sort((a, b) => (b.averageRating ?? 0) - (a.averageRating ?? 0));
         break;
       case "name":
         result.sort((a, b) => a.name.localeCompare(b.name, "tr"));
@@ -77,19 +79,6 @@ export default function Home() {
     [restaurants],
   );
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground font-medium">
-            Restoranlar yükleniyor...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   const firstName = user?.name?.split(" ")[0] ?? "Hoş Geldiniz";
 
   return (
@@ -97,9 +86,7 @@ export default function Home() {
       <Header
         activeView={activeView}
         onViewChange={setActiveView}
-        onAddClick={() =>
-          user?.role === "staff" ? setAddModalOpen(true) : setStaffOnlyModalOpen(true)
-        }
+        onAddClick={() => setAddModalOpen(true)}
       />
 
       <AddRestaurantModal
@@ -108,10 +95,16 @@ export default function Home() {
         onSuccess={(r) => setRestaurants((prev) => [r, ...prev])}
       />
 
-      <StaffOnlyModal
-        open={staffOnlyModalOpen}
-        onClose={() => setStaffOnlyModalOpen(false)}
-      />
+      {reviewTarget && (
+        <ReviewModal
+          open={!!reviewTarget}
+          onClose={() => setReviewTarget(null)}
+          restaurantId={reviewTarget.id}
+          onSuccess={() =>
+            fetchRestaurants().then(setRestaurants).catch(console.error)
+          }
+        />
+      )}
 
       {/* Hero banner */}
       <div className="hm-gradient">
@@ -149,7 +142,14 @@ export default function Home() {
         />
 
         {/* Content */}
-        {activeView === "list" ? (
+        {loading ? (
+          <div className="py-20 text-center">
+            <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground font-medium">
+              Restoranlar yükleniyor...
+            </p>
+          </div>
+        ) : activeView === "list" ? (
           filteredRestaurants.length === 0 ? (
             <div className="py-20 text-center">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
@@ -165,7 +165,12 @@ export default function Home() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {filteredRestaurants.map((r) => (
-                <RestaurantCard key={r.id} restaurant={r} />
+                <RestaurantCard
+                  key={r.id}
+                  restaurant={r}
+                  canReview={!!user && r.addedBy !== user.name}
+                  onReview={() => setReviewTarget(r)}
+                />
               ))}
             </div>
           )

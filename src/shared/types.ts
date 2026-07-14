@@ -7,7 +7,6 @@ export const CreateRestaurantSchema = z.object({
   city: z.string().min(1, "Şehir zorunludur"),
   district: z.string().min(1, "İlçe zorunludur"),
   foodType: z.string().min(1, "Yemek türü zorunludur"),
-  rating: z.number().int().min(1).max(5),
   comment: z.string().min(1, "Yorum zorunludur"),
   addedBy: z.string().min(1, "İsim zorunludur"),
   lat: z.number().optional().default(0),

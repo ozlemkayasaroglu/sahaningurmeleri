@@ -50,8 +50,10 @@ export function RestaurantMap({ restaurants, onMarkerClick }: RestaurantMapProps
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
 
-    const createIcon = (rating: number) => {
-      const color = rating >= 5 ? "#204080" : rating >= 4 ? "#0090c0" : "#64748b";
+    const createIcon = (averageRating: number | undefined) => {
+      const color =
+        !averageRating ? "#64748b" : averageRating >= 4.5 ? "#204080" : averageRating >= 3.5 ? "#0090c0" : "#64748b";
+      const label = averageRating ? averageRating.toFixed(1) : "–";
       return L.divIcon({
         className: "",
         html: `
@@ -69,13 +71,13 @@ export function RestaurantMap({ restaurants, onMarkerClick }: RestaurantMapProps
           ">
             <span style="
               transform: rotate(45deg);
-              font-size: 13px;
+              font-size: 12px;
               font-weight: bold;
               color: white;
               display: block;
               text-align: center;
               line-height: 26px;
-            ">${rating}</span>
+            ">${label}</span>
           </div>
         `,
         iconSize: [32, 32],
@@ -94,15 +96,17 @@ export function RestaurantMap({ restaurants, onMarkerClick }: RestaurantMapProps
         lng = coords[1];
       }
 
-      const marker = L.marker([lat, lng], { icon: createIcon(r.rating) });
+      const marker = L.marker([lat, lng], { icon: createIcon(r.averageRating) });
 
-      const stars = "★".repeat(r.rating) + "☆".repeat(5 - r.rating);
+      const ratingLine = r.averageRating
+        ? `★ ${r.averageRating.toFixed(1)} <span style="color:#64748b">(${r.reviewCount} yorum)</span>`
+        : `<span style="color:#94a3b8">Henüz yorum yok</span>`;
       marker.bindPopup(`
         <div style="min-width: 180px; font-family: Inter, sans-serif;">
           ${r.photoUrl ? `<img src="${r.photoUrl}" style="width:100%;height:90px;object-fit:cover;border-radius:6px;margin-bottom:8px;" />` : ""}
           <div style="font-weight:700;font-size:14px;color:#1e293b;margin-bottom:2px;">${r.name}</div>
           <div style="font-size:12px;color:#64748b;margin-bottom:4px;">📍 ${r.district}, ${r.city}</div>
-          <div style="font-size:12px;color:#f59e0b;margin-bottom:4px;">${stars} <span style="color:#64748b">(${r.rating}/5)</span></div>
+          <div style="font-size:12px;color:#f59e0b;margin-bottom:4px;">${ratingLine}</div>
           <div style="font-size:11px;color:#475569;border-top:1px solid #e2e8f0;padding-top:6px;margin-top:4px;">
             🍽 ${r.foodType} &nbsp;·&nbsp; 👤 ${r.addedBy}
           </div>

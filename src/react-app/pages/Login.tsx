@@ -2,11 +2,13 @@ import { useState } from "react";
 import { Eye, EyeOff, LogIn, UserPlus } from "lucide-react";
 import { Button } from "@/react-app/components/ui/button";
 import { useAuth } from "@/react-app/context/AuthContext";
+import { useNavigate } from "react-router";
 
 type Tab = "login" | "register";
 
 export default function LoginPage() {
   const { fetchUser } = useAuth();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("login");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -36,6 +38,7 @@ export default function LoginPage() {
         return;
       }
       await fetchUser();
+      navigate("/");
     } catch {
       setError("Bağlantı hatası. Lütfen tekrar deneyin.");
     } finally {
@@ -67,6 +70,7 @@ export default function LoginPage() {
         return;
       }
       await fetchUser();
+      navigate("/");
     } catch {
       setError("Bağlantı hatası. Lütfen tekrar deneyin.");
     } finally {
@@ -120,16 +124,12 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Mobil logo */}
           <div className="lg:hidden text-center mb-8">
-            <Link>
-              <img
-                src="/hakanlogo.png"
-                alt="Hakan Makina"
-                className="h-16 w-auto mx-auto mb-3"
-              />
-              <h1 className="text-xl font-bold text-foreground">
-                Saha Günlüğü
-              </h1>
-            </Link>
+            <img
+              src="/hakanlogo.png"
+              alt="Hakan Makina"
+              className="h-16 w-auto mx-auto mb-3"
+            />
+            <h1 className="text-xl font-bold text-foreground">Saha Günlüğü</h1>
           </div>
 
           <div className="bg-white rounded-2xl border border-border shadow-lg overflow-hidden">
@@ -142,7 +142,7 @@ export default function LoginPage() {
                 }}
                 className={`flex-1 flex items-center justify-center gap-2 py-4 text-sm font-semibold transition-all ${
                   tab === "login"
-                    ? "text-primary border-b-2 border-primary bg-primary/3"
+                    ? "text-primary border-b-2 border-primary "
                     : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 }`}
               >
@@ -329,7 +329,8 @@ export default function LoginPage() {
               )}
 
               <p className="text-center text-xs text-muted-foreground mt-6 pt-5 border-t border-border">
-                Bu platform yalnızca Hakan Makina ekip üyelerine özeldir.
+                Restoran ekleme yetkisi şirket personeline özeldir; herkes yorum
+                yapıp puanlayabilir.
               </p>
             </div>
           </div>

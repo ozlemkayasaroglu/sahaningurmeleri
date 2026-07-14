@@ -4,7 +4,6 @@ export interface Restaurant {
   city: string;
   district: string;
   foodType: string;
-  rating: number;
   comment: string;
   addedBy: string;
   addedByAvatar?: string;

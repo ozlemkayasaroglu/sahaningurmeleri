@@ -3,17 +3,13 @@ import { Badge } from "@/react-app/components/ui/badge";
 import { Button } from "@/react-app/components/ui/button";
 import type { Restaurant } from "@/data/restaurants";
 
-function StarRating({ rating }: { rating: number }) {
+function AverageRatingBadge({ averageRating, reviewCount }: { averageRating?: number; reviewCount?: number }) {
+  if (!reviewCount) return null;
   return (
-    <div className="flex items-center gap-0.5">
-      {[1, 2, 3, 4, 5].map((s) => (
-        <Star
-          key={s}
-          size={13}
-          className={s <= rating ? "fill-amber-400 text-amber-400" : "fill-muted text-muted"}
-        />
-      ))}
-    </div>
+    <span className="inline-flex items-center gap-1 rounded-full bg-primary/5 px-2 py-1 text-[11px] font-semibold text-primary shrink-0">
+      <Star size={12} className="fill-primary text-primary" />
+      {averageRating?.toFixed(1) ?? "—"}
+    </span>
   );
 }
 
@@ -66,7 +62,7 @@ export function RestaurantCard({
             <h3 className="font-semibold text-foreground leading-tight group-hover:text-primary transition-colors line-clamp-1">
               {restaurant.name}
             </h3>
-            <StarRating rating={restaurant.rating} />
+            <AverageRatingBadge averageRating={restaurant.averageRating} reviewCount={restaurant.reviewCount} />
           </div>
           <div className="flex items-center gap-1 text-muted-foreground text-xs">
             <MapPin size={11} className="shrink-0" />
@@ -95,15 +91,12 @@ export function RestaurantCard({
           </div>
           {typeof restaurant.reviewCount === "number" && restaurant.reviewCount > 0 ? (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary/5 px-2 py-1 text-[11px] text-primary">
-                <Star size={12} /> {restaurant.averageRating?.toFixed(1) ?? "—"}
-              </span>
               <span className="inline-flex items-center gap-1 rounded-full bg-muted/10 px-2 py-1 text-[11px]">
                 {restaurant.reviewCount} yorum
               </span>
             </div>
           ) : (
-            <div className="text-xs text-muted-foreground">Henüz yorum yok</div>
+            <div className="text-xs text-muted-foreground">Henüz yorum yok — ilk puanı sen ver!</div>
           )}
         </div>
 

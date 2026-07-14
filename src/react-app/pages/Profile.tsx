@@ -120,10 +120,14 @@ export default function ProfilePage() {
   };
 
   const myRestaurants = restaurants.filter((r) => r.addedBy === user?.name);
+  const myRatedRestaurants = myRestaurants.filter(
+    (r) => (r.reviewCount ?? 0) > 0,
+  );
   const avgRating =
-    myRestaurants.length > 0
+    myRatedRestaurants.length > 0
       ? (
-          myRestaurants.reduce((s, r) => s + r.rating, 0) / myRestaurants.length
+          myRatedRestaurants.reduce((s, r) => s + (r.averageRating ?? 0), 0) /
+          myRatedRestaurants.length
         ).toFixed(1)
       : "—";
   const initials = user?.name
@@ -254,140 +258,152 @@ export default function ProfilePage() {
               </form>
             </div>
 
-            {/* My Restaurants */}
-            <div>
-              <h2 className="text-base font-semibold text-foreground mb-3">
-                Eklediğim Restoranlar
-              </h2>
-              {loading ? (
-                <div className="space-y-2">
-                  {[1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      className="bg-white rounded-xl border border-border p-4 animate-pulse"
-                    >
-                      <div className="h-4 bg-muted rounded w-1/3 mb-2" />
-                      <div className="h-3 bg-muted rounded w-1/2" />
-                    </div>
-                  ))}
-                </div>
-              ) : myRestaurants.length === 0 ? (
-                <div className="bg-white rounded-xl border border-border p-8 text-center">
-                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
-                    <UtensilsCrossed className="w-6 h-6 text-muted-foreground" />
-                  </div>
-                  <p className="font-medium text-foreground">
-                    Henüz restoran eklemediniz
-                  </p>
-                  <p className="text-muted-foreground text-sm mt-1">
-                    Ana sayfadan yeni bir restoran ekleyebilirsiniz.
-                  </p>
-                  <Button
-                    onClick={() => navigate("/")}
-                    size="sm"
-                    className="mt-4 rounded-lg hm-gradient text-white border-0"
-                  >
-                    Restoran Ekle
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {myRestaurants.map((r) => (
-                    <div
-                      key={r.id}
-                      className="bg-white rounded-xl border border-border p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between hover:border-primary/30 transition-colors"
-                    >
-                      <div className="flex items-center gap-4">
-                        {r.photoUrl ? (
-                          <img
-                            src={r.photoUrl}
-                            alt={r.name}
-                            className="w-14 h-14 rounded-lg object-cover shrink-0"
-                          />
-                        ) : (
-                          <div className="w-14 h-14 rounded-lg hm-gradient-subtle border border-primary/15 flex items-center justify-center shrink-0">
-                            <UtensilsCrossed className="w-6 h-6 text-primary" />
-                          </div>
-                        )}
-                        <div className="min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <h3 className="font-semibold text-foreground truncate text-sm">
-                              {r.name}
-                            </h3>
-                            <div className="flex items-center gap-0.5 shrink-0">
-                              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                              <span className="text-sm font-semibold text-foreground">
-                                {r.rating}
-                              </span>
-                            </div>
-                          </div>
-                          <p className="text-xs text-muted-foreground truncate mt-0.5">
-                            {r.district}, {r.city} · {r.foodType}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {formatDate(r.createdAt)}
-                          </p>
-                        </div>
-                      </div>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDeleteRestaurant(r.id)}
-                        className="self-start sm:self-auto rounded-lg"
+            {/* My Restaurants — sadece şirket personeli restoran ekleyebildiği için müşterilere gösterilmez */}
+            {user?.role === "staff" && (
+              <div>
+                <h2 className="text-base font-semibold text-foreground mb-3">
+                  Eklediğim Restoranlar
+                </h2>
+                {loading ? (
+                  <div className="space-y-2">
+                    {[1, 2, 3].map((i) => (
+                      <div
+                        key={i}
+                        className="bg-white rounded-xl border border-border p-4 animate-pulse"
                       >
-                        Sil
-                      </Button>
+                        <div className="h-4 bg-muted rounded w-1/3 mb-2" />
+                        <div className="h-3 bg-muted rounded w-1/2" />
+                      </div>
+                    ))}
+                  </div>
+                ) : myRestaurants.length === 0 ? (
+                  <div className="bg-white rounded-xl border border-border p-8 text-center">
+                    <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
+                      <UtensilsCrossed className="w-6 h-6 text-muted-foreground" />
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                    <p className="font-medium text-foreground">
+                      Henüz restoran eklemediniz
+                    </p>
+                    <p className="text-muted-foreground text-sm mt-1">
+                      Ana sayfadan yeni bir restoran ekleyebilirsiniz.
+                    </p>
+                    <Button
+                      onClick={() => navigate("/")}
+                      size="sm"
+                      className="mt-4 rounded-lg bg-green-500 text-white hover:bg-green-600 shadow-md hover:shadow-lg hover:scale-105 border-0 rounded-lg font-semibold"
+                    >
+                      Restoran Ekle
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {myRestaurants.map((r) => (
+                      <div
+                        key={r.id}
+                        className="bg-white rounded-xl border border-border p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between hover:border-primary/30 transition-colors"
+                      >
+                        <div className="flex items-center gap-4">
+                          {r.photoUrl ? (
+                            <img
+                              src={r.photoUrl}
+                              alt={r.name}
+                              className="w-14 h-14 rounded-lg object-cover shrink-0"
+                            />
+                          ) : (
+                            <div className="w-14 h-14 rounded-lg hm-gradient-subtle border border-primary/15 flex items-center justify-center shrink-0">
+                              <UtensilsCrossed className="w-6 h-6 text-primary" />
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <h3 className="font-semibold text-foreground truncate text-sm">
+                                {r.name}
+                              </h3>
+                              {(r.reviewCount ?? 0) > 0 ? (
+                                <div className="flex items-center gap-0.5 shrink-0">
+                                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                                  <span className="text-sm font-semibold text-foreground">
+                                    {r.averageRating?.toFixed(1)}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-muted-foreground shrink-0">
+                                  Henüz yorum yok
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground truncate mt-0.5">
+                              {r.district}, {r.city} · {r.foodType}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {formatDate(r.createdAt)}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteRestaurant(r.id)}
+                          className="self-start sm:self-auto rounded-lg"
+                        >
+                          Sil
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="space-y-5">
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                {
-                  icon: UtensilsCrossed,
-                  val: loading ? "—" : myRestaurants.length,
-                  lbl: "Eklenen Restoran",
-                  color: "text-primary",
-                  bg: "bg-primary/8",
-                },
-                {
-                  icon: Star,
-                  val: loading ? "—" : avgRating,
-                  lbl: "Ortalama Puan",
-                  color: "text-amber-500",
-                  bg: "bg-amber-50",
-                },
-                {
-                  icon: MapPin,
-                  val: loading
-                    ? "—"
-                    : new Set(myRestaurants.map((r) => r.city)).size,
-                  lbl: "Farklı Şehir",
-                  color: "text-accent",
-                  bg: "bg-accent/8",
-                },
-              ].map((s) => (
-                <div
-                  key={s.lbl}
-                  className="bg-white rounded-xl border border-border p-4 text-center"
-                >
+            {/* Stats — yalnızca şirket personeli restoran ekleyebildiği için müşterilere gösterilmez */}
+            {user?.role === "staff" && (
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  {
+                    icon: UtensilsCrossed,
+                    val: loading ? "—" : myRestaurants.length,
+                    lbl: "Eklenen Restoran",
+                    color: "text-primary",
+                    bg: "bg-primary/8",
+                  },
+                  {
+                    icon: Star,
+                    val: loading ? "—" : avgRating,
+                    lbl: "Ortalama Puan",
+                    color: "text-amber-500",
+                    bg: "bg-amber-50",
+                  },
+                  {
+                    icon: MapPin,
+                    val: loading
+                      ? "—"
+                      : new Set(myRestaurants.map((r) => r.city)).size,
+                    lbl: "Farklı Şehir",
+                    color: "text-accent",
+                    bg: "bg-accent/8",
+                  },
+                ].map((s) => (
                   <div
-                    className={`w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center mx-auto mb-2`}
+                    key={s.lbl}
+                    className="bg-white rounded-xl border border-border p-4 text-center"
                   >
-                    <s.icon className={`w-5 h-5 ${s.color}`} />
+                    <div
+                      className={`w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center mx-auto mb-2`}
+                    >
+                      <s.icon className={`w-5 h-5 ${s.color}`} />
+                    </div>
+                    <p className="text-2xl font-bold text-foreground">
+                      {s.val}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {s.lbl}
+                    </p>
                   </div>
-                  <p className="text-2xl font-bold text-foreground">{s.val}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {s.lbl}
-                  </p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
             {/* Danger zone */}
             <div className="bg-white rounded-xl border border-destructive/20 p-5">

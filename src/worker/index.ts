@@ -24,7 +24,6 @@ interface Restaurant {
   city: string;
   district: string;
   foodType: string;
-  rating: number;
   comment: string;
   addedBy: string;
   addedByAvatar?: string;
@@ -42,7 +41,6 @@ interface RestaurantRow {
   city: string;
   district: string;
   food_type: string;
-  rating: number;
   comment: string;
   added_by: string;
   added_by_avatar: string | null;
@@ -62,7 +60,6 @@ function mapRestaurant(row: RestaurantRow): Restaurant {
     city: row.city,
     district: row.district,
     foodType: row.food_type,
-    rating: row.rating,
     comment: row.comment,
     addedBy: row.added_by,
     addedByAvatar: row.added_by_avatar ?? undefined,
@@ -196,20 +193,16 @@ app.post("/api/auth/logout", async (c) => {
 app.get("/api/restaurants", async (c) => {
   try {
     const result = await c.env.DB.prepare(
-      `SELECT r.id, r.name, r.city, r.district, r.food_type, r.rating, r.comment,
-              r.added_by, r.added_by_avatar, r.added_by_id, r.created_at, r.lat, r.lng, r.photo_url
+      `SELECT r.id, r.name, r.city, r.district, r.food_type, r.comment,
+              r.added_by, r.added_by_avatar, r.added_by_id, r.created_at, r.lat, r.lng, r.photo_url,
+              AVG(rv.rating) AS average_rating, COUNT(rv.id) AS review_count
        FROM restaurants r
+       LEFT JOIN reviews rv ON rv.restaurant_id = r.id
+       GROUP BY r.id
        ORDER BY datetime(r.created_at) DESC`
     ).all();
 
-    // Add default values for aggregates
-    const restaurants = (result.results as any[]).map((r: any) => ({
-      ...r,
-      average_rating: null,
-      review_count: 0,
-    }));
-
-    return c.json(restaurants.map(mapRestaurant));
+    return c.json((result.results as RestaurantRow[]).map(mapRestaurant));
   } catch (error) {
     console.error("Error fetching restaurants:", error);
     throw new HTTPException(500, { message: "Restoranlar yüklenemedi" });
@@ -309,7 +302,6 @@ app.post(
       city: body.city,
       district: body.district,
       foodType: body.foodType,
-      rating: body.rating,
       comment: body.comment,
       addedBy: user.name,
       addedByAvatar: user.avatar_url ?? undefined,
@@ -317,13 +309,15 @@ app.post(
       lat: body.lat ?? 0,
       lng: body.lng ?? 0,
       photoUrl: body.photoUrl || undefined,
+      averageRating: undefined,
+      reviewCount: 0,
     };
 
     await c.env.DB.prepare(
       `INSERT INTO restaurants (
-        id, name, city, district, food_type, rating, comment, added_by,
+        id, name, city, district, food_type, comment, added_by,
         added_by_avatar, added_by_id, created_at, lat, lng, photo_url
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
       .bind(
         newRestaurant.id,
@@ -331,7 +325,6 @@ app.post(
         newRestaurant.city,
         newRestaurant.district,
         newRestaurant.foodType,
-        newRestaurant.rating,
         newRestaurant.comment,
         newRestaurant.addedBy,
         newRestaurant.addedByAvatar ?? null,
