@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Eye, EyeOff, LogIn, UserPlus } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, LogIn, UserPlus } from "lucide-react";
 import { Button } from "@/react-app/components/ui/button";
 import { useAuth } from "@/react-app/context/AuthContext";
 import { useNavigate } from "react-router";
@@ -120,7 +120,15 @@ export default function LoginPage() {
       </div>
 
       {/* Sağ panel — form */}
-      <div className="flex-1 flex items-center justify-center p-6">
+      <div className="flex-1 flex items-center justify-center p-6 relative">
+        <button
+          onClick={() => navigate("/")}
+          className="absolute top-4 left-4 sm:top-6 sm:left-6 flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Ana Sayfa
+        </button>
+
         <div className="w-full max-w-md">
           {/* Mobil logo */}
           <div className="lg:hidden text-center mb-8">

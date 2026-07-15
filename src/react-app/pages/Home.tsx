@@ -5,6 +5,7 @@ import { RestaurantCard } from "@/react-app/components/RestaurantCard";
 import { QuickStats } from "@/react-app/components/QuickStats";
 import { AddRestaurantModal } from "@/react-app/components/AddRestaurantModal";
 import { ReviewModal } from "@/react-app/components/ReviewModal";
+import { ReviewsListModal } from "@/react-app/components/ReviewsListModal";
 import { RestaurantMap } from "@/react-app/components/RestaurantMap";
 import { fetchRestaurants, Restaurant } from "@/data/restaurants";
 import { useAuth } from "@/react-app/context/AuthContext";
@@ -22,6 +23,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [reviewTarget, setReviewTarget] = useState<Restaurant | null>(null);
+  const [viewReviewsTarget, setViewReviewsTarget] = useState<Restaurant | null>(null);
 
   useEffect(() => {
     fetchRestaurants()
@@ -106,6 +108,15 @@ export default function Home() {
         />
       )}
 
+      {viewReviewsTarget && (
+        <ReviewsListModal
+          open={!!viewReviewsTarget}
+          onClose={() => setViewReviewsTarget(null)}
+          restaurantId={viewReviewsTarget.id}
+          restaurantName={viewReviewsTarget.name}
+        />
+      )}
+
       {/* Hero banner */}
       <div className="hm-gradient">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -170,6 +181,7 @@ export default function Home() {
                   restaurant={r}
                   canReview={!!user && r.addedBy !== user.name}
                   onReview={() => setReviewTarget(r)}
+                  onViewReviews={() => setViewReviewsTarget(r)}
                 />
               ))}
             </div>

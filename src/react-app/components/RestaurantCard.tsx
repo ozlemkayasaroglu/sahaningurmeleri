@@ -21,10 +21,12 @@ export function RestaurantCard({
   restaurant,
   onReview,
   canReview,
+  onViewReviews,
 }: {
   restaurant: Restaurant;
   onReview?: () => void;
   canReview?: boolean;
+  onViewReviews?: () => void;
 }) {
   const hasCoords = restaurant.lat !== 0 && restaurant.lng !== 0;
   const destination = hasCoords
@@ -91,9 +93,12 @@ export function RestaurantCard({
           </div>
           {typeof restaurant.reviewCount === "number" && restaurant.reviewCount > 0 ? (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1 rounded-full bg-muted/10 px-2 py-1 text-[11px]">
-                {restaurant.reviewCount} yorum
-              </span>
+              <button
+                onClick={onViewReviews}
+                className="inline-flex items-center gap-1 rounded-full bg-muted/10 px-2 py-1 text-[11px] hover:bg-primary/10 hover:text-primary transition-colors"
+              >
+                {restaurant.reviewCount} yorum — görüntüle
+              </button>
             </div>
           ) : (
             <div className="text-xs text-muted-foreground">Henüz yorum yok — ilk puanı sen ver!</div>

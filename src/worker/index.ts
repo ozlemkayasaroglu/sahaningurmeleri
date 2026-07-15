@@ -220,6 +220,16 @@ app.get("/api/restaurants/:id/reviews", async (c) => {
     throw new HTTPException(404, { message: "Restoran bulunamadı" });
   }
 
+  interface ReviewRow {
+    id: string;
+    restaurant_id: string;
+    rating: number;
+    comment: string;
+    added_by: string;
+    added_by_avatar: string | null;
+    created_at: string;
+  }
+
   const reviews = await c.env.DB.prepare(
     `SELECT id, restaurant_id, rating, comment, added_by, added_by_avatar, created_at
      FROM reviews
@@ -227,9 +237,19 @@ app.get("/api/restaurants/:id/reviews", async (c) => {
      ORDER BY datetime(created_at) DESC`
   )
     .bind(restaurantId)
-    .all();
+    .all<ReviewRow>();
 
-  return c.json(reviews.results);
+  return c.json(
+    (reviews.results as ReviewRow[]).map((r) => ({
+      id: r.id,
+      restaurantId: r.restaurant_id,
+      rating: r.rating,
+      comment: r.comment,
+      addedBy: r.added_by,
+      addedByAvatar: r.added_by_avatar ?? undefined,
+      createdAt: r.created_at,
+    }))
+  );
 });
 
 app.post(

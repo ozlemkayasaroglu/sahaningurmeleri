@@ -66,3 +66,16 @@ export async function fetchRestaurants(): Promise<Restaurant[]> {
     return [];
   }
 }
+
+export async function fetchReviews(restaurantId: string): Promise<Review[]> {
+  try {
+    const response = await fetch(`/api/restaurants/${restaurantId}/reviews`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching reviews:', error);
+    return [];
+  }
+}
