@@ -1,0 +1,28 @@
+INSERT OR IGNORE INTO restaurants (
+  id, name, city, district, food_type, rating, comment, added_by,
+  added_by_avatar, added_by_id, created_at, lat, lng, photo_url
+) VALUES
+  ('gm-01', 'Mahir Ocakbaşı Kebab', 'İstanbul', 'Fatih', 'Kebap', NULL, 'Google Maps listesinden eklendi.', 'Özlem Kayasaroğlu', NULL, NULL, datetime('now'), 41.016656, 28.965529, NULL),
+  ('gm-02', 'KARET Restoran', 'Ankara', 'Çankaya', 'Diğer', NULL, 'Google Maps listesinden eklendi.', 'Özlem Kayasaroğlu', NULL, NULL, datetime('now'), 39.895002, 32.8112234, NULL),
+  ('gm-03', 'Alsancak Dostlar Fırını - Boyoz', 'İzmir', 'Konak', 'Kahvaltı', NULL, 'Google Maps listesinden eklendi.', 'Özlem Kayasaroğlu', NULL, NULL, datetime('now'), 38.4392628, 27.1439159, NULL),
+  ('gm-04', 'Köfteci Kardeşler', 'İzmir', 'Konak', 'Ev Yemekleri', NULL, 'Google Maps listesinden eklendi.', 'Özlem Kayasaroğlu', NULL, NULL, datetime('now'), 38.4190168, 27.1345709, NULL),
+  ('gm-05', 'Zeynel Ergin Gevrek Fırını', 'İzmir', 'Konak', 'Kahvaltı', NULL, 'Google Maps listesinden eklendi.', 'Özlem Kayasaroğlu', NULL, NULL, datetime('now'), 38.4384435, 27.1450734, NULL),
+  ('gm-06', 'Besi Balık Pişirme', 'Ankara', 'Çankaya', 'Balık', NULL, 'Google Maps listesinden eklendi.', 'Özlem Kayasaroğlu', NULL, NULL, datetime('now'), 39.9220945, 32.8555466, NULL),
+  ('gm-07', 'Gradi Kurtuluş', 'İstanbul', 'Şişli', 'Dünya Mutfağı', NULL, 'Google Maps listesinden eklendi.', 'Özlem Kayasaroğlu', NULL, NULL, datetime('now'), 41.0476672, 28.9800898, NULL),
+  ('gm-08', 'Dalain Restorant', 'İstanbul', 'Fatih', 'Diğer', NULL, 'Google Maps listesinden eklendi.', 'Özlem Kayasaroğlu', NULL, NULL, datetime('now'), 41.0177302, 28.9421079, NULL),
+  ('gm-09', 'Göçmen Kasabı Halil Usta', 'Adana', 'Pozantı', 'Kebap', NULL, 'Google Maps listesinden eklendi.', 'Özlem Kayasaroğlu', NULL, NULL, datetime('now'), 37.3283658, 34.7930008, NULL),
+  ('gm-10', 'Pöç Kasap ve Restaurant (Palladium Uzun Çarşı)', 'Hatay', 'Antakya', 'Kebap', NULL, 'Google Maps listesinden eklendi.', 'Özlem Kayasaroğlu', NULL, NULL, datetime('now'), 36.2094765, 36.1632166, NULL),
+  ('gm-11', 'Çınaraltı Künefe Yusuf Usta', 'Hatay', 'Antakya', 'Tatlı', NULL, 'Google Maps listesinden eklendi.', 'Özlem Kayasaroğlu', NULL, NULL, datetime('now'), 36.2295403, 36.1674027, NULL),
+  ('gm-12', 'Metehan Lahmacun', 'Adana', 'Pozantı', 'Pide & Lahmacun', NULL, 'Google Maps listesinden eklendi.', 'Özlem Kayasaroğlu', NULL, NULL, datetime('now'), 37.4297236, 34.8756081, NULL),
+  ('gm-13', 'Karagedik Lokantası', 'Ankara', 'Altındağ', 'Ev Yemekleri', NULL, 'Google Maps listesinden eklendi.', 'Özlem Kayasaroğlu', NULL, NULL, datetime('now'), 39.933803, 32.857552, NULL),
+  ('gm-14', 'Uzan Et Mangal', 'Bursa', 'Nilüfer', 'Kebap', NULL, 'Google Maps listesinden eklendi.', 'Özlem Kayasaroğlu', NULL, NULL, datetime('now'), 40.1760154, 28.8460561, NULL),
+  ('gm-15', 'Tola Restaurant', 'Bursa', 'Mudanya', 'Balık', NULL, 'Google Maps listesinden eklendi.', 'Özlem Kayasaroğlu', NULL, NULL, datetime('now'), 40.2897142, 28.9204293, NULL),
+  ('gm-16', 'Vahit''in Yeri', 'Çanakkale', 'Bozcaada', 'Balık', NULL, 'Google Maps listesinden eklendi.', 'Özlem Kayasaroğlu', NULL, NULL, datetime('now'), 39.8135272, 26.0064748, NULL),
+  ('gm-17', 'Efendi Restaurant', 'Giresun', 'Merkez', 'Diğer', NULL, 'Google Maps listesinden eklendi.', 'Özlem Kayasaroğlu', NULL, NULL, datetime('now'), 40.9278719, 38.3108597, NULL),
+  ('gm-18', 'Şişçi Hasan', 'Burdur', 'Merkez', 'Kebap', NULL, 'Google Maps listesinden eklendi.', 'Özlem Kayasaroğlu', NULL, NULL, datetime('now'), 37.7456711, 30.3125572, NULL),
+  ('gm-19', 'Tavacı İzzet Usta Kilis Tava', 'Kilis', 'Merkez', 'Diğer', NULL, 'Google Maps listesinden eklendi.', 'Özlem Kayasaroğlu', NULL, NULL, datetime('now'), 36.7166974, 37.119976, NULL),
+  ('gm-20', 'Aşçı Bacaksız', 'Afyonkarahisar', 'Merkez', 'Ev Yemekleri', NULL, 'Google Maps listesinden eklendi.', 'Özlem Kayasaroğlu', NULL, NULL, datetime('now'), 38.754949, 30.5376133, NULL),
+  ('gm-21', 'Salim Usta Uzun Çarşı', 'Afyonkarahisar', 'Merkez', 'Kebap', NULL, 'Google Maps listesinden eklendi.', 'Özlem Kayasaroğlu', NULL, NULL, datetime('now'), 38.7560068, 30.5382646, NULL),
+  ('gm-22', 'Bursa Mudanya İstasyon Sosyal Tesisleri', 'Bursa', 'Mudanya', 'Diğer', NULL, 'Google Maps listesinden eklendi.', 'Özlem Kayasaroğlu', NULL, NULL, datetime('now'), 40.3730939, 28.8896653, NULL),
+  ('gm-23', 'Mudanya Eminönü Balık Ekmek Bursa Ercan Usta', 'Bursa', 'Mudanya', 'Balık', NULL, 'Google Maps listesinden eklendi.', 'Özlem Kayasaroğlu', NULL, NULL, datetime('now'), 40.3773944, 28.8846364, NULL),
+  ('gm-24', 'Alim Kasap Ocakbaşı Fırın', 'Kahramanmaraş', 'Dulkadiroğlu', 'Kebap', NULL, 'Google Maps listesinden eklendi.', 'Özlem Kayasaroğlu', NULL, NULL, datetime('now'), 37.5797648, 36.9454042, NULL);
