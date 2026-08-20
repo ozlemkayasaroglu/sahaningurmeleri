@@ -30,6 +30,10 @@ export const CreateReviewSchema = z.object({
   photoUrl: PhotoUrlSchema,
 });
 
+export const CreateReplySchema = z.object({
+  comment: z.string().min(1, "Yanıt zorunludur"),
+});
+
 export const UpdateProfileSchema = z.object({
   name: z.string().min(2, "İsim en az 2 karakter olmalıdır"),
   avatar_url: PhotoUrlSchema,
@@ -37,6 +41,7 @@ export const UpdateProfileSchema = z.object({
 
 export type CreateRestaurantInput = z.infer<typeof CreateRestaurantSchema>;
 export type CreateReviewInput = z.infer<typeof CreateReviewSchema>;
+export type CreateReplyInput = z.infer<typeof CreateReplySchema>;
 export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>;
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────

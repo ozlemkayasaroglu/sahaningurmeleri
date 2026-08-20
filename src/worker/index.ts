@@ -10,6 +10,7 @@ import {
   LoginSchema,
   ForgotPasswordSchema,
   ResetPasswordSchema,
+  CreateReplySchema,
 } from "@/shared/types";
 import type { AppUser } from "@/shared/types";
 import {
@@ -382,8 +383,37 @@ app.get("/api/restaurants/:id/reviews", async (c) => {
     .bind(restaurantId)
     .all<ReviewRow>();
 
+  const reviewRows = reviews.results as ReviewRow[];
+
+  interface ReplyRow {
+    id: string;
+    review_id: string;
+    comment: string;
+    added_by: string;
+    added_by_avatar: string | null;
+    created_at: string;
+  }
+
+  const replies = reviewRows.length
+    ? await c.env.DB.prepare(
+        `SELECT id, review_id, comment, added_by, added_by_avatar, created_at
+         FROM review_replies
+         WHERE review_id IN (${reviewRows.map(() => "?").join(",")})
+         ORDER BY datetime(created_at) ASC`
+      )
+        .bind(...reviewRows.map((r) => r.id))
+        .all<ReplyRow>()
+    : { results: [] as ReplyRow[] };
+
+  const repliesByReview = new Map<string, ReplyRow[]>();
+  for (const reply of replies.results as ReplyRow[]) {
+    const list = repliesByReview.get(reply.review_id) ?? [];
+    list.push(reply);
+    repliesByReview.set(reply.review_id, list);
+  }
+
   return c.json(
-    (reviews.results as ReviewRow[]).map((r) => ({
+    reviewRows.map((r) => ({
       id: r.id,
       restaurantId: r.restaurant_id,
       rating: r.rating,
@@ -392,9 +422,96 @@ app.get("/api/restaurants/:id/reviews", async (c) => {
       addedByAvatar: r.added_by_avatar ?? undefined,
       createdAt: r.created_at,
       photoUrl: r.photo_url ?? undefined,
+      replies: (repliesByReview.get(r.id) ?? []).map((rep) => ({
+        id: rep.id,
+        reviewId: rep.review_id,
+        comment: rep.comment,
+        addedBy: rep.added_by,
+        addedByAvatar: rep.added_by_avatar ?? undefined,
+        createdAt: rep.created_at,
+      })),
     }))
   );
 });
+
+app.post(
+  "/api/reviews/:id/replies",
+  authMiddleware,
+  zValidator("json", CreateReplySchema),
+  async (c) => {
+    const reviewId = c.req.param("id");
+    const body = c.req.valid("json");
+    const user = c.get("user");
+
+    const review = await c.env.DB.prepare(
+      "SELECT id, restaurant_id, added_by, added_by_id FROM reviews WHERE id = ?"
+    )
+      .bind(reviewId)
+      .first<{ id: string; restaurant_id: string; added_by: string; added_by_id: string | null }>();
+
+    if (!review) {
+      throw new HTTPException(404, { message: "Yorum bulunamadı" });
+    }
+
+    const restaurant = await c.env.DB.prepare("SELECT name FROM restaurants WHERE id = ?")
+      .bind(review.restaurant_id)
+      .first<{ name: string }>();
+
+    const replyId = crypto.randomUUID();
+    const createdAt = new Date().toISOString();
+
+    await c.env.DB.prepare(
+      `INSERT INTO review_replies (id, review_id, comment, added_by, added_by_avatar, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    )
+      .bind(replyId, reviewId, body.comment, user.name, user.avatar_url ?? null, createdAt)
+      .run();
+
+    const notifyTargets = new Map<string, string>();
+
+    if (review.added_by !== user.name) {
+      const reviewer = await c.env.DB.prepare("SELECT id FROM users WHERE name = ?")
+        .bind(review.added_by)
+        .first<{ id: string }>();
+      if (reviewer) {
+        notifyTargets.set(
+          reviewer.id,
+          `${user.name}, "${restaurant?.name ?? ""}" için yaptığın yoruma yanıt verdi.`
+        );
+      }
+    }
+
+    const allUsers = await c.env.DB.prepare("SELECT id, name FROM users").all<{ id: string; name: string }>();
+    const commentLower = body.comment.toLowerCase();
+    const mentioned = ((allUsers.results ?? []) as { id: string; name: string }[]).filter(
+      (u) => u.id !== user.id && commentLower.includes(`@${u.name.toLowerCase()}`)
+    );
+    for (const target of mentioned) {
+      notifyTargets.set(
+        target.id,
+        `${user.name}, "${restaurant?.name ?? ""}" için yaptığı yanıtta seni etiketledi.`
+      );
+    }
+
+    for (const [userId, message] of notifyTargets) {
+      await c.env.DB.prepare(
+        `INSERT INTO notifications (id, user_id, restaurant_id, review_id, actor_name, message, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
+      )
+        .bind(crypto.randomUUID(), userId, review.restaurant_id, reviewId, user.name, message, createdAt)
+        .run();
+    }
+
+    return c.json({
+      id: replyId,
+      reviewId,
+      comment: body.comment,
+      addedBy: user.name,
+      addedByAvatar: user.avatar_url ?? undefined,
+      createdAt,
+    }, 201);
+  }
+);
 
 app.post(
   "/api/restaurants/:id/reviews",

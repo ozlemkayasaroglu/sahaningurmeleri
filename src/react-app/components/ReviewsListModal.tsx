@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Star, User, X } from "lucide-react";
-import { fetchReviews, fetchUsers, Review, TaggableUser } from "@/data/restaurants";
+import { Star, User, X, MessageCircle, Send } from "lucide-react";
+import { fetchReviews, fetchUsers, postReply, Review, TaggableUser } from "@/data/restaurants";
+import { useAuth } from "@/react-app/context/AuthContext";
 
 interface ReviewsListModalProps {
   open: boolean;
@@ -42,10 +43,33 @@ export function ReviewsListModal({
   restaurantName,
   highlightReviewId,
 }: ReviewsListModalProps) {
+  const { user } = useAuth();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [users, setUsers] = useState<TaggableUser[]>([]);
   const [loading, setLoading] = useState(true);
   const highlightRef = useRef<HTMLDivElement>(null);
+
+  const [replyOpenFor, setReplyOpenFor] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [replySubmitting, setReplySubmitting] = useState(false);
+
+  const handleReplySubmit = async (reviewId: string) => {
+    if (!replyText.trim()) return;
+    setReplySubmitting(true);
+    try {
+      const reply = await postReply(reviewId, replyText.trim());
+      setReviews((prev) =>
+        prev.map((r) => (r.id === reviewId ? { ...r, replies: [...(r.replies ?? []), reply] } : r))
+      );
+      setReplyText("");
+      setReplyOpenFor(null);
+    } catch (error) {
+      console.error(error);
+      alert(error instanceof Error ? error.message : "Yanıt gönderilirken bir hata oluştu.");
+    } finally {
+      setReplySubmitting(false);
+    }
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -142,9 +166,65 @@ export function ReviewsListModal({
                     className="w-full h-40 object-cover rounded-lg"
                   />
                 )}
-                <p className="text-xs text-muted-foreground/70">
-                  {formatDate(r.createdAt)}
-                </p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs text-muted-foreground/70">
+                    {formatDate(r.createdAt)}
+                  </p>
+                  {user && (
+                    <button
+                      onClick={() => {
+                        setReplyOpenFor(replyOpenFor === r.id ? null : r.id);
+                        setReplyText("");
+                      }}
+                      className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+                    >
+                      <MessageCircle size={12} />
+                      Yanıtla
+                    </button>
+                  )}
+                </div>
+
+                {(r.replies?.length ?? 0) > 0 && (
+                  <div className="pl-4 border-l-2 border-border space-y-2 mt-1">
+                    {r.replies!.map((rep) => (
+                      <div key={rep.id} className="space-y-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-medium text-foreground">{rep.addedBy}</span>
+                          <span className="text-[11px] text-muted-foreground/70">{formatDate(rep.createdAt)}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          {renderCommentWithMentions(rep.comment, users)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {replyOpenFor === r.id && (
+                  <div className="flex items-center gap-2 pt-1">
+                    <input
+                      autoFocus
+                      type="text"
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleReplySubmit(r.id);
+                        }
+                      }}
+                      placeholder="Bir yanıt yaz..."
+                      className="flex-1 px-3 py-1.5 rounded-lg border border-border bg-background text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    />
+                    <button
+                      onClick={() => handleReplySubmit(r.id)}
+                      disabled={replySubmitting || !replyText.trim()}
+                      className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center shrink-0 disabled:opacity-50 hover:bg-primary/90 transition-colors"
+                    >
+                      <Send size={13} />
+                    </button>
+                  </div>
+                )}
               </div>
             ))
           )}

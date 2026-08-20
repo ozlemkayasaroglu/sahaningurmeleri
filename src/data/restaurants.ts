@@ -15,6 +15,15 @@ export interface Restaurant {
   reviewCount?: number;
 }
 
+export interface ReviewReply {
+  id: string;
+  reviewId: string;
+  comment: string;
+  addedBy: string;
+  addedByAvatar?: string;
+  createdAt: string;
+}
+
 export interface Review {
   id: string;
   restaurantId: string;
@@ -24,6 +33,7 @@ export interface Review {
   addedByAvatar?: string;
   createdAt: string;
   photoUrl?: string;
+  replies?: ReviewReply[];
 }
 
 export const foodTypes = [
@@ -97,4 +107,17 @@ export async function fetchReviews(restaurantId: string): Promise<Review[]> {
     console.error('Error fetching reviews:', error);
     return [];
   }
+}
+
+export async function postReply(reviewId: string, comment: string): Promise<ReviewReply> {
+  const response = await fetch(`/api/reviews/${reviewId}/replies`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ comment }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || "Yanıt gönderilemedi");
+  }
+  return data;
 }
