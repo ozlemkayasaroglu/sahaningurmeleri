@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Bell, AtSign } from "lucide-react";
+import { useNavigate } from "react-router";
 import {
   fetchNotifications,
   markAllNotificationsRead,
@@ -19,6 +20,7 @@ function formatRelative(d: string) {
 }
 
 export function NotificationBell() {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -55,6 +57,12 @@ export function NotificationBell() {
     if (!n.read) {
       await markNotificationRead(n.id);
       setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
+    }
+    setOpen(false);
+    if (n.restaurantId) {
+      const params = new URLSearchParams({ restaurant: n.restaurantId });
+      if (n.reviewId) params.set("review", n.reviewId);
+      navigate(`/?${params.toString()}`);
     }
   };
 

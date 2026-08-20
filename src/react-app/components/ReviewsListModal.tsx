@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Star, User, X } from "lucide-react";
 import { fetchReviews, fetchUsers, Review, TaggableUser } from "@/data/restaurants";
 
@@ -7,6 +7,7 @@ interface ReviewsListModalProps {
   onClose: () => void;
   restaurantId: string;
   restaurantName: string;
+  highlightReviewId?: string | null;
 }
 
 function formatDate(d: string) {
@@ -39,10 +40,12 @@ export function ReviewsListModal({
   onClose,
   restaurantId,
   restaurantName,
+  highlightReviewId,
 }: ReviewsListModalProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [users, setUsers] = useState<TaggableUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const highlightRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -52,6 +55,12 @@ export function ReviewsListModal({
       .finally(() => setLoading(false));
     fetchUsers().then(setUsers);
   }, [open, restaurantId]);
+
+  useEffect(() => {
+    if (!loading && highlightReviewId && highlightRef.current) {
+      highlightRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [loading, highlightReviewId]);
 
   if (!open) return null;
 
@@ -93,7 +102,12 @@ export function ReviewsListModal({
             reviews.map((r) => (
               <div
                 key={r.id}
-                className="border border-border rounded-xl p-4 space-y-2"
+                ref={r.id === highlightReviewId ? highlightRef : undefined}
+                className={`border rounded-xl p-4 space-y-2 transition-colors ${
+                  r.id === highlightReviewId
+                    ? "border-primary bg-primary/5 ring-2 ring-primary/30"
+                    : "border-border"
+                }`}
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">

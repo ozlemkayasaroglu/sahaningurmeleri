@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "react-router";
 import { Header } from "@/react-app/components/Header";
 import { FilterBar } from "@/react-app/components/FilterBar";
 import { RestaurantCard } from "@/react-app/components/RestaurantCard";
@@ -24,6 +25,8 @@ export default function Home() {
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [reviewTarget, setReviewTarget] = useState<Restaurant | null>(null);
   const [viewReviewsTarget, setViewReviewsTarget] = useState<Restaurant | null>(null);
+  const [highlightReviewId, setHighlightReviewId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     fetchRestaurants()
@@ -31,6 +34,20 @@ export default function Home() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (restaurants.length === 0) return;
+    const restaurantId = searchParams.get("restaurant");
+    const reviewId = searchParams.get("review");
+    if (!restaurantId) return;
+
+    const target = restaurants.find((r) => r.id === restaurantId);
+    if (target) {
+      setViewReviewsTarget(target);
+      setHighlightReviewId(reviewId);
+    }
+    setSearchParams({}, { replace: true });
+  }, [restaurants, searchParams, setSearchParams]);
 
   const filteredRestaurants = useMemo(() => {
     let result = [...restaurants];
@@ -111,9 +128,13 @@ export default function Home() {
       {viewReviewsTarget && (
         <ReviewsListModal
           open={!!viewReviewsTarget}
-          onClose={() => setViewReviewsTarget(null)}
+          onClose={() => {
+            setViewReviewsTarget(null);
+            setHighlightReviewId(null);
+          }}
           restaurantId={viewReviewsTarget.id}
           restaurantName={viewReviewsTarget.name}
+          highlightReviewId={highlightReviewId}
         />
       )}
 
