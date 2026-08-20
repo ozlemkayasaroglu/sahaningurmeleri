@@ -203,7 +203,7 @@ app.post("/api/auth/forgot-password", zValidator("json", ForgotPasswordSchema), 
 
     if (c.env.RESEND_API_KEY) {
       try {
-        await fetch("https://api.resend.com/emails", {
+        const resendResponse = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${c.env.RESEND_API_KEY}`,
@@ -216,6 +216,9 @@ app.post("/api/auth/forgot-password", zValidator("json", ForgotPasswordSchema), 
             html: `<p>Merhaba,</p><p>Şifreni sıfırlamak için <a href="${resetLink}">bu bağlantıya</a> tıkla. Bağlantı 1 saat geçerlidir.</p><p>Bu talebi sen yapmadıysan bu e-postayı yok sayabilirsin.</p>`,
           }),
         });
+        if (!resendResponse.ok) {
+          console.error("Resend email error:", resendResponse.status, await resendResponse.text());
+        }
       } catch (err) {
         console.error("Resend email error:", err);
       }
