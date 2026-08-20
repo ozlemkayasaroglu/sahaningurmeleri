@@ -17,6 +17,7 @@ export const CreateRestaurantSchema = z.object({
 export const CreateReviewSchema = z.object({
   rating: z.number().int().min(1).max(5),
   comment: z.string().min(1, "Yorum zorunludur"),
+  photoUrl: z.string().url().optional().or(z.literal("")),
 });
 
 export const UpdateProfileSchema = z.object({

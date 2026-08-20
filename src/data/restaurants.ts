@@ -23,6 +23,7 @@ export interface Review {
   addedBy: string;
   addedByAvatar?: string;
   createdAt: string;
+  photoUrl?: string;
 }
 
 export const foodTypes = [

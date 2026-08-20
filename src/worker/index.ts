@@ -228,10 +228,11 @@ app.get("/api/restaurants/:id/reviews", async (c) => {
     added_by: string;
     added_by_avatar: string | null;
     created_at: string;
+    photo_url: string | null;
   }
 
   const reviews = await c.env.DB.prepare(
-    `SELECT id, restaurant_id, rating, comment, added_by, added_by_avatar, created_at
+    `SELECT id, restaurant_id, rating, comment, added_by, added_by_avatar, created_at, photo_url
      FROM reviews
      WHERE restaurant_id = ?
      ORDER BY datetime(created_at) DESC`
@@ -248,6 +249,7 @@ app.get("/api/restaurants/:id/reviews", async (c) => {
       addedBy: r.added_by,
       addedByAvatar: r.added_by_avatar ?? undefined,
       createdAt: r.created_at,
+      photoUrl: r.photo_url ?? undefined,
     }))
   );
 });
@@ -284,10 +286,19 @@ app.post(
 
     await c.env.DB.prepare(
       `INSERT INTO reviews (
-        id, restaurant_id, rating, comment, added_by, added_by_avatar, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)`
+        id, restaurant_id, rating, comment, added_by, added_by_avatar, created_at, photo_url
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     )
-      .bind(reviewId, restaurantId, body.rating, body.comment, user.name, user.avatar_url ?? null, createdAt)
+      .bind(
+        reviewId,
+        restaurantId,
+        body.rating,
+        body.comment,
+        user.name,
+        user.avatar_url ?? null,
+        createdAt,
+        body.photoUrl || null
+      )
       .run();
 
     return c.json({
@@ -298,6 +309,7 @@ app.post(
       addedBy: user.name,
       addedByAvatar: user.avatar_url ?? null,
       createdAt,
+      photoUrl: body.photoUrl || undefined,
     }, 201);
   }
 );

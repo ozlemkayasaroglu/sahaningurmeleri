@@ -102,6 +102,13 @@ export function ReviewsListModal({
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   "{r.comment}"
                 </p>
+                {r.photoUrl && (
+                  <img
+                    src={r.photoUrl}
+                    alt="Yorum fotoğrafı"
+                    className="w-full h-40 object-cover rounded-lg"
+                  />
+                )}
                 <p className="text-xs text-muted-foreground/70">
                   {formatDate(r.createdAt)}
                 </p>

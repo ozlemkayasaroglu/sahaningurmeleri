@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { X, Star } from "lucide-react";
+import { useRef, useState } from "react";
+import { X, Star, Camera, Loader2 } from "lucide-react";
 import { Button } from "@/react-app/components/ui/button";
 import { CreateReviewInput } from "@/shared/types";
 import type { Review } from "@/data/restaurants";
@@ -15,13 +15,41 @@ export function ReviewModal({ open, onClose, restaurantId, onSuccess }: ReviewMo
   const initialForm: CreateReviewInput = {
     rating: 5,
     comment: "",
+    photoUrl: "",
   };
 
   const [form, setForm] = useState<CreateReviewInput>(initialForm);
   const [errors, setErrors] = useState<Partial<Record<keyof CreateReviewInput, string>>>({});
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!open) return null;
+
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setUploadError("");
+    setUploading(true);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const response = await fetch("/api/upload", { method: "POST", body });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Yükleme başarısız");
+      }
+      setForm((prev) => ({ ...prev, photoUrl: data.url }));
+    } catch (err) {
+      console.error(err);
+      setUploadError(err instanceof Error ? err.message : "Fotoğraf yüklenirken bir hata oluştu");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const validate = () => {
     const newErrors: Partial<Record<keyof CreateReviewInput, string>> = {};
@@ -107,11 +135,57 @@ export function ReviewModal({ open, onClose, restaurantId, onSuccess }: ReviewMo
             {errors.comment && <p className="text-xs text-destructive">{errors.comment}</p>}
           </div>
 
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-foreground">
+              Fotoğraf <span className="text-muted-foreground text-xs font-normal">(isteğe bağlı)</span>
+            </label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handlePhotoSelect}
+              className="hidden"
+            />
+            {form.photoUrl ? (
+              <div className="relative rounded-xl overflow-hidden border border-border">
+                <img src={form.photoUrl} alt="Seçilen fotoğraf" className="w-full h-40 object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setForm((prev) => ({ ...prev, photoUrl: "" }))}
+                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 hover:bg-black/80 flex items-center justify-center transition-colors"
+                >
+                  <X className="w-4 h-4 text-white" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="w-full flex items-center justify-center gap-2 px-3 py-4 rounded-xl border border-dashed border-border bg-background text-sm text-muted-foreground hover:border-primary hover:text-primary transition-all disabled:opacity-60"
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Yükleniyor...
+                  </>
+                ) : (
+                  <>
+                    <Camera className="w-4 h-4" />
+                    Fotoğraf çek veya galeriden seç
+                  </>
+                )}
+              </button>
+            )}
+            {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
+          </div>
+
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="outline" className="flex-1 rounded-xl" onClick={onClose} disabled={loading}>
               İptal
             </Button>
-            <Button type="submit" className="flex-1 rounded-xl" disabled={loading}>
+            <Button type="submit" className="flex-1 rounded-xl" disabled={loading || uploading}>
               {loading ? "Gönderiliyor..." : "Yorum Gönder"}
             </Button>
           </div>
