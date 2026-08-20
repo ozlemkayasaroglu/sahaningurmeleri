@@ -179,7 +179,7 @@ export default function Home() {
                 <RestaurantCard
                   key={r.id}
                   restaurant={r}
-                  canReview={!!user && r.addedBy !== user.name}
+                  canReview={!!user}
                   onReview={() => setReviewTarget(r)}
                   onViewReviews={() => setViewReviewsTarget(r)}
                 />

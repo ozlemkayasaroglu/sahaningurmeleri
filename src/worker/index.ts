@@ -261,17 +261,12 @@ app.post(
     const body = c.req.valid("json");
     const user = c.get("user");
 
-    const restaurant = await c.env.DB.prepare("SELECT id, added_by, added_by_id FROM restaurants WHERE id = ?")
+    const restaurant = await c.env.DB.prepare("SELECT id FROM restaurants WHERE id = ?")
       .bind(restaurantId)
-      .first<{ id: string; added_by: string; added_by_id: string | null }>();
+      .first<{ id: string }>();
 
     if (!restaurant) {
       throw new HTTPException(404, { message: "Restoran bulunamadı" });
-    }
-
-    const isOwner = restaurant.added_by_id === user.id || restaurant.added_by === user.name;
-    if (isOwner) {
-      throw new HTTPException(403, { message: "Kendi eklediğiniz restorana yorum yapamazsınız" });
     }
 
     const existingReview = await c.env.DB.prepare(
