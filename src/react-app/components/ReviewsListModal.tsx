@@ -17,6 +17,19 @@ function formatDate(d: string) {
   });
 }
 
+function renderCommentWithMentions(comment: string) {
+  const parts = comment.split(/(@[\p{L}0-9]+)/gu);
+  return parts.map((part, i) =>
+    part.startsWith("@") ? (
+      <span key={i} className="text-primary font-medium">
+        {part}
+      </span>
+    ) : (
+      part
+    )
+  );
+}
+
 export function ReviewsListModal({
   open,
   onClose,
@@ -100,7 +113,7 @@ export function ReviewsListModal({
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  "{r.comment}"
+                  "{renderCommentWithMentions(r.comment)}"
                 </p>
                 {r.photoUrl && (
                   <img

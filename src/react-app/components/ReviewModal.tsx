@@ -1,8 +1,8 @@
-import { useRef, useState } from "react";
-import { X, Star, Camera, Loader2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { X, Star, Camera, Loader2, AtSign } from "lucide-react";
 import { Button } from "@/react-app/components/ui/button";
 import { CreateReviewInput } from "@/shared/types";
-import type { Review } from "@/data/restaurants";
+import { fetchUsers, type Review, type TaggableUser } from "@/data/restaurants";
 
 interface ReviewModalProps {
   open: boolean;
@@ -24,8 +24,54 @@ export function ReviewModal({ open, onClose, restaurantId, onSuccess }: ReviewMo
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const [users, setUsers] = useState<TaggableUser[]>([]);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionStart, setMentionStart] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetchUsers().then(setUsers);
+  }, []);
 
   if (!open) return null;
+
+  const mentionMatches =
+    mentionQuery === null
+      ? []
+      : users.filter((u) => u.name.toLowerCase().includes(mentionQuery.toLowerCase())).slice(0, 5);
+
+  const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    const cursor = e.target.selectionStart ?? value.length;
+    setForm((prev) => ({ ...prev, comment: value }));
+
+    const beforeCursor = value.slice(0, cursor);
+    const match = beforeCursor.match(/(?:^|\s)@([\p{L}0-9]*)$/u);
+    if (match) {
+      setMentionQuery(match[1]);
+      setMentionStart(cursor - match[1].length - 1);
+    } else {
+      setMentionQuery(null);
+      setMentionStart(null);
+    }
+  };
+
+  const insertMention = (name: string) => {
+    if (mentionStart === null) return;
+    const cursor = textareaRef.current?.selectionStart ?? form.comment.length;
+    const before = form.comment.slice(0, mentionStart);
+    const after = form.comment.slice(cursor);
+    const newValue = `${before}@${name} ${after}`;
+    setForm((prev) => ({ ...prev, comment: newValue }));
+    setMentionQuery(null);
+    setMentionStart(null);
+    requestAnimationFrame(() => {
+      const pos = before.length + name.length + 2;
+      textareaRef.current?.focus();
+      textareaRef.current?.setSelectionRange(pos, pos);
+    });
+  };
 
   const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -123,16 +169,34 @@ export function ReviewModal({ open, onClose, restaurantId, onSuccess }: ReviewMo
             {errors.rating && <p className="text-xs text-destructive">{errors.rating}</p>}
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 relative">
             <label className="text-sm font-medium text-foreground">Yorum <span className="text-destructive">*</span></label>
             <textarea
+              ref={textareaRef}
               value={form.comment}
-              onChange={(e) => setForm((prev) => ({ ...prev, comment: e.target.value }))}
-              placeholder="Bu restoran hakkında düşünceleriniz"
+              onChange={handleCommentChange}
+              onBlur={() => setTimeout(() => setMentionQuery(null), 150)}
+              placeholder="Bu restoran hakkında düşünceleriniz — birini etiketlemek için @ yazın"
               rows={4}
               className={`w-full px-3 py-2 rounded-xl border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none ${errors.comment ? "border-destructive" : "border-border"}`}
             />
             {errors.comment && <p className="text-xs text-destructive">{errors.comment}</p>}
+            {mentionQuery !== null && mentionMatches.length > 0 && (
+              <div className="absolute z-20 left-0 right-0 top-full mt-1 bg-white border border-border rounded-xl shadow-lg overflow-hidden">
+                {mentionMatches.map((u) => (
+                  <button
+                    key={u.id}
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => insertMention(u.name)}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-muted/50 transition-colors"
+                  >
+                    <AtSign className="w-3.5 h-3.5 text-primary shrink-0" />
+                    {u.name}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="space-y-1.5">

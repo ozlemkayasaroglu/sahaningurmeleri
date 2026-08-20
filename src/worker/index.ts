@@ -178,6 +178,14 @@ app.get("/api/auth/me", authMiddleware, (c) => {
   return c.json(c.get("user"));
 });
 
+// List users (for @ tagging in comments)
+app.get("/api/users", authMiddleware, async (c) => {
+  const result = await c.env.DB.prepare(
+    "SELECT id, name FROM users ORDER BY name ASC"
+  ).all<{ id: string; name: string }>();
+  return c.json(result.results);
+});
+
 // Logout
 app.post("/api/auth/logout", async (c) => {
   const token = getCookie(c, SESSION_COOKIE);
