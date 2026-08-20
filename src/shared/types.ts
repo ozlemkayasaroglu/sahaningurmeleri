@@ -1,5 +1,15 @@
 import z from "zod";
 
+// Fotoğraf alanları tam bir URL (https://...) veya /api/upload'ın döndürdüğü
+// /api/photos/:key gibi göreli bir yol olabilir.
+const PhotoUrlSchema = z
+  .string()
+  .refine((v) => v === "" || /^https?:\/\//.test(v) || v.startsWith("/api/photos/"), {
+    message: "Geçerli bir fotoğraf değil",
+  })
+  .optional()
+  .or(z.literal(""));
+
 // ─── Restaurant ───────────────────────────────────────────────────────────────
 
 export const CreateRestaurantSchema = z.object({
@@ -11,18 +21,18 @@ export const CreateRestaurantSchema = z.object({
   addedBy: z.string().min(1, "İsim zorunludur"),
   lat: z.number().optional().default(0),
   lng: z.number().optional().default(0),
-  photoUrl: z.string().url().optional().or(z.literal("")),
+  photoUrl: PhotoUrlSchema,
 });
 
 export const CreateReviewSchema = z.object({
   rating: z.number().int().min(1).max(5),
   comment: z.string().min(1, "Yorum zorunludur"),
-  photoUrl: z.string().url().optional().or(z.literal("")),
+  photoUrl: PhotoUrlSchema,
 });
 
 export const UpdateProfileSchema = z.object({
   name: z.string().min(2, "İsim en az 2 karakter olmalıdır"),
-  avatar_url: z.string().url().optional().or(z.literal("")),
+  avatar_url: PhotoUrlSchema,
 });
 
 export type CreateRestaurantInput = z.infer<typeof CreateRestaurantSchema>;

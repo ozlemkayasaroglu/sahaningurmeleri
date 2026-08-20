@@ -8,9 +8,11 @@ import {
   Star,
   UtensilsCrossed,
   MapPin,
+  Camera,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/react-app/components/ui/button";
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, useRef, type FormEvent } from "react";
 import type { Restaurant } from "@/data/restaurants";
 
 function formatDate(d: string) {
@@ -31,6 +33,9 @@ export default function ProfilePage() {
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
   const [name, setName] = useState(user?.name ?? "");
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url ?? "");
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState("");
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user) {
@@ -38,6 +43,30 @@ export default function ProfilePage() {
       setAvatarUrl(user.avatar_url ?? "");
     }
   }, [user]);
+
+  const handleAvatarSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setAvatarError("");
+    setUploadingAvatar(true);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const response = await fetch("/api/upload", { method: "POST", body });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Yükleme başarısız");
+      }
+      setAvatarUrl(data.url);
+    } catch (err) {
+      console.error(err);
+      setAvatarError(err instanceof Error ? err.message : "Fotoğraf yüklenirken bir hata oluştu");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const fetchRestaurants = async () => {
     setLoading(true);
@@ -234,14 +263,50 @@ export default function ProfilePage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Profil Fotoğraf URL
+                    Profil Fotoğrafı
                   </label>
                   <input
-                    type="url"
-                    value={avatarUrl}
-                    onChange={(e) => setAvatarUrl(e.target.value)}
-                    className="w-full rounded-xl border border-border px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleAvatarSelect}
+                    className="hidden"
                   />
+                  <div className="flex items-center gap-4">
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt="Profil fotoğrafı"
+                        className="w-16 h-16 rounded-xl object-cover border border-border shrink-0"
+                      />
+                    ) : (
+                      <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                        <Camera className="w-5 h-5 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="flex-1 space-y-1.5">
+                      <button
+                        type="button"
+                        onClick={() => avatarInputRef.current?.click()}
+                        disabled={uploadingAvatar}
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-dashed border-border bg-background text-sm text-muted-foreground hover:border-primary hover:text-primary transition-all disabled:opacity-60"
+                      >
+                        {uploadingAvatar ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Yükleniyor...
+                          </>
+                        ) : (
+                          <>
+                            <Camera className="w-4 h-4" />
+                            Fotoğraf çek veya galeriden seç
+                          </>
+                        )}
+                      </button>
+                      {avatarError && <p className="text-xs text-destructive">{avatarError}</p>}
+                    </div>
+                  </div>
                 </div>
                 {profileMessage ? (
                   <div className="rounded-xl border border-border p-3 text-sm text-foreground bg-muted/30">
@@ -250,7 +315,7 @@ export default function ProfilePage() {
                 ) : null}
                 <Button
                   type="submit"
-                  disabled={savingProfile}
+                  disabled={savingProfile || uploadingAvatar}
                   className="rounded-lg hm-gradient text-white border-0"
                 >
                   {savingProfile ? "Kaydediliyor..." : "Profili Güncelle"}
