@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Star, User, X } from "lucide-react";
-import { fetchReviews, Review } from "@/data/restaurants";
+import { fetchReviews, fetchUsers, Review, TaggableUser } from "@/data/restaurants";
 
 interface ReviewsListModalProps {
   open: boolean;
@@ -17,8 +17,12 @@ function formatDate(d: string) {
   });
 }
 
-function renderCommentWithMentions(comment: string) {
-  const parts = comment.split(/(@[\p{L}0-9]+)/gu);
+function renderCommentWithMentions(comment: string, users: TaggableUser[]) {
+  const knownNames = users.map((u) => u.name).sort((a, b) => b.length - a.length);
+  const pattern = knownNames.length
+    ? new RegExp(`(@(?:${knownNames.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")}))`, "g")
+    : /(@[\p{L}0-9]+)/gu;
+  const parts = comment.split(pattern);
   return parts.map((part, i) =>
     part.startsWith("@") ? (
       <span key={i} className="text-primary font-medium">
@@ -37,6 +41,7 @@ export function ReviewsListModal({
   restaurantName,
 }: ReviewsListModalProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [users, setUsers] = useState<TaggableUser[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -45,6 +50,7 @@ export function ReviewsListModal({
     fetchReviews(restaurantId)
       .then(setReviews)
       .finally(() => setLoading(false));
+    fetchUsers().then(setUsers);
   }, [open, restaurantId]);
 
   if (!open) return null;
@@ -113,7 +119,7 @@ export function ReviewsListModal({
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  "{renderCommentWithMentions(r.comment)}"
+                  "{renderCommentWithMentions(r.comment, users)}"
                 </p>
                 {r.photoUrl && (
                   <img

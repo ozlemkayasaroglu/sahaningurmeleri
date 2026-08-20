@@ -3,6 +3,7 @@ import { Plus, List, Map, LogIn, LogOut } from "lucide-react";
 import { Button } from "@/react-app/components/ui/button";
 import { useAuth } from "@/react-app/context/AuthContext";
 import { useNavigate } from "react-router";
+import { NotificationBell } from "@/react-app/components/NotificationBell";
 
 interface HeaderProps {
   activeView: "list" | "map";
@@ -49,7 +50,7 @@ export function Header({ activeView, onViewChange, onAddClick }: HeaderProps) {
             <div className="hidden lg:block w-px h-8 bg-border" />
             <div className="hidden lg:block">
               <p className="text-md font-semibold text-foreground leading-none">
-                Saha Günlüğü
+                Sahanın Gurmeleri
               </p>
               <p className="text-sm text-muted-foreground mt-0.5">
                 Restoran Keşif Platformu
@@ -95,6 +96,8 @@ export function Header({ activeView, onViewChange, onAddClick }: HeaderProps) {
                 <span className="hidden sm:inline">Restoran Ekle</span>
               </Button>
             )}
+
+            {user ? <NotificationBell /> : null}
 
             {user ? (
               <button

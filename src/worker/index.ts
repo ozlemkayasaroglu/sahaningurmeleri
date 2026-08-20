@@ -186,6 +186,55 @@ app.get("/api/users", authMiddleware, async (c) => {
   return c.json(result.results);
 });
 
+interface NotificationRow {
+  id: string;
+  restaurant_id: string | null;
+  review_id: string | null;
+  actor_name: string;
+  message: string;
+  is_read: number;
+  created_at: string;
+}
+
+app.get("/api/notifications", authMiddleware, async (c) => {
+  const user = c.get("user");
+  const result = await c.env.DB.prepare(
+    `SELECT id, restaurant_id, review_id, actor_name, message, is_read, created_at
+     FROM notifications WHERE user_id = ? ORDER BY datetime(created_at) DESC LIMIT 30`
+  )
+    .bind(user.id)
+    .all<NotificationRow>();
+
+  return c.json(
+    ((result.results ?? []) as NotificationRow[]).map((n) => ({
+      id: n.id,
+      restaurantId: n.restaurant_id ?? undefined,
+      reviewId: n.review_id ?? undefined,
+      actorName: n.actor_name,
+      message: n.message,
+      read: !!n.is_read,
+      createdAt: n.created_at,
+    }))
+  );
+});
+
+app.post("/api/notifications/:id/read", authMiddleware, async (c) => {
+  const user = c.get("user");
+  const id = c.req.param("id");
+  await c.env.DB.prepare("UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?")
+    .bind(id, user.id)
+    .run();
+  return c.json({ success: true });
+});
+
+app.post("/api/notifications/read-all", authMiddleware, async (c) => {
+  const user = c.get("user");
+  await c.env.DB.prepare("UPDATE notifications SET is_read = 1 WHERE user_id = ? AND is_read = 0")
+    .bind(user.id)
+    .run();
+  return c.json({ success: true });
+});
+
 // Logout
 app.post("/api/auth/logout", async (c) => {
   const token = getCookie(c, SESSION_COOKIE);
@@ -271,9 +320,9 @@ app.post(
     const body = c.req.valid("json");
     const user = c.get("user");
 
-    const restaurant = await c.env.DB.prepare("SELECT id FROM restaurants WHERE id = ?")
+    const restaurant = await c.env.DB.prepare("SELECT id, name FROM restaurants WHERE id = ?")
       .bind(restaurantId)
-      .first<{ id: string }>();
+      .first<{ id: string; name: string }>();
 
     if (!restaurant) {
       throw new HTTPException(404, { message: "Restoran bulunamadı" });
@@ -308,6 +357,29 @@ app.post(
         body.photoUrl || null
       )
       .run();
+
+    const allUsers = await c.env.DB.prepare("SELECT id, name FROM users").all<{ id: string; name: string }>();
+    const commentLower = body.comment.toLowerCase();
+    const mentioned = ((allUsers.results ?? []) as { id: string; name: string }[]).filter(
+      (u) => u.id !== user.id && commentLower.includes(`@${u.name.toLowerCase()}`)
+    );
+
+    for (const target of mentioned) {
+      await c.env.DB.prepare(
+        `INSERT INTO notifications (id, user_id, restaurant_id, review_id, actor_name, message, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
+      )
+        .bind(
+          crypto.randomUUID(),
+          target.id,
+          restaurantId,
+          reviewId,
+          user.name,
+          `${user.name}, "${restaurant.name}" için yaptığı yorumda seni etiketledi.`,
+          createdAt
+        )
+        .run();
+    }
 
     return c.json({
       id: reviewId,
