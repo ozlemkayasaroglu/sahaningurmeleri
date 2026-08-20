@@ -307,6 +307,45 @@ app.post(
   }
 );
 
+const ALLOWED_PHOTO_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
+const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
+
+app.post("/api/upload", authMiddleware, async (c) => {
+  const form = await c.req.formData();
+  const file = form.get("file");
+  if (!(file instanceof File)) {
+    return c.json({ error: "Dosya bulunamadı" }, 400);
+  }
+  if (!ALLOWED_PHOTO_TYPES.has(file.type)) {
+    return c.json({ error: "Yalnızca JPEG, PNG, WEBP veya HEIC fotoğraf yükleyebilirsiniz" }, 400);
+  }
+  if (file.size > MAX_PHOTO_BYTES) {
+    return c.json({ error: "Dosya boyutu 8MB'ı geçemez" }, 400);
+  }
+
+  const ext = file.type.split("/")[1] ?? "jpg";
+  const key = `${crypto.randomUUID()}.${ext}`;
+  await c.env.PHOTOS.put(key, await file.arrayBuffer(), {
+    httpMetadata: { contentType: file.type },
+  });
+
+  return c.json({ url: `/api/photos/${key}` }, 201);
+});
+
+app.get("/api/photos/:key", async (c) => {
+  const key = c.req.param("key");
+  const object = await c.env.PHOTOS.get(key);
+  if (!object) {
+    return c.notFound();
+  }
+  return new Response(object.body, {
+    headers: {
+      "Content-Type": object.httpMetadata?.contentType ?? "application/octet-stream",
+      "Cache-Control": "public, max-age=31536000, immutable",
+    },
+  });
+});
+
 app.post(
   "/api/restaurants",
   authMiddleware,

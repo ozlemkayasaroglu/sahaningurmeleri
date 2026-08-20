@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { X, MapPin } from "lucide-react";
+import { useRef, useState } from "react";
+import { X, MapPin, Camera, Loader2 } from "lucide-react";
 import { Button } from "@/react-app/components/ui/button";
 import { foodTypes, turkishCities, Restaurant } from "@/data/restaurants";
 import { CreateRestaurantInput } from "@/shared/types";
@@ -29,7 +29,10 @@ export function AddRestaurantModal({ open, onClose, onSuccess }: AddRestaurantMo
 
   const [form, setForm] = useState<CreateRestaurantInput>({ ...initialForm, addedBy: autoName });
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const [errors, setErrors] = useState<Partial<Record<keyof CreateRestaurantInput, string>>>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!open) return null;
 
@@ -81,6 +84,30 @@ export function AddRestaurantModal({ open, onClose, onSuccess }: AddRestaurantMo
   const set = <K extends keyof CreateRestaurantInput>(key: K, value: CreateRestaurantInput[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
+  };
+
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setUploadError("");
+    setUploading(true);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const response = await fetch("/api/upload", { method: "POST", body });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Yükleme başarısız");
+      }
+      set("photoUrl", data.url);
+    } catch (err) {
+      console.error(err);
+      setUploadError(err instanceof Error ? err.message : "Fotoğraf yüklenirken bir hata oluştu");
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -206,18 +233,51 @@ export function AddRestaurantModal({ open, onClose, onSuccess }: AddRestaurantMo
             {errors.comment && <p className="text-xs text-destructive">{errors.comment}</p>}
           </div>
 
-          {/* Fotoğraf URL */}
+          {/* Fotoğraf */}
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-foreground">
-              Fotoğraf URL <span className="text-muted-foreground text-xs font-normal">(isteğe bağlı)</span>
+              Fotoğraf <span className="text-muted-foreground text-xs font-normal">(isteğe bağlı)</span>
             </label>
             <input
-              type="url"
-              value={form.photoUrl ?? ""}
-              onChange={(e) => set("photoUrl", e.target.value)}
-              placeholder="https://..."
-              className="w-full px-3 py-2 rounded-xl border border-border bg-background text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handlePhotoSelect}
+              className="hidden"
             />
+            {form.photoUrl ? (
+              <div className="relative rounded-xl overflow-hidden border border-border">
+                <img src={form.photoUrl} alt="Seçilen fotoğraf" className="w-full h-40 object-cover" />
+                <button
+                  type="button"
+                  onClick={() => set("photoUrl", "")}
+                  className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 hover:bg-black/80 flex items-center justify-center transition-colors"
+                >
+                  <X className="w-4 h-4 text-white" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="w-full flex items-center justify-center gap-2 px-3 py-4 rounded-xl border border-dashed border-border bg-background text-sm text-muted-foreground hover:border-primary hover:text-primary transition-all disabled:opacity-60"
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Yükleniyor...
+                  </>
+                ) : (
+                  <>
+                    <Camera className="w-4 h-4" />
+                    Fotoğraf çek veya galeriden seç
+                  </>
+                )}
+              </button>
+            )}
+            {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
           </div>
 
           {/* Ekleyen */}
@@ -251,7 +311,7 @@ export function AddRestaurantModal({ open, onClose, onSuccess }: AddRestaurantMo
             <Button
               type="submit"
               className="flex-1 rounded-xl hm-gradient text-white hover:opacity-90 border-0 shadow-md"
-              disabled={loading}
+              disabled={loading || uploading}
             >
               {loading ? (
                 <span className="flex items-center gap-2">

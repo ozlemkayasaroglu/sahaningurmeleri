@@ -19,5 +19,11 @@
       "database_name": "sahaningurmeleri",
       "database_id": "194d2d93-f56d-46b5-bfd9-d76b8e414bd2"
     }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "PHOTOS",
+      "bucket_name": "sahaningurmeleri-photos"
+    }
   ]
 }
