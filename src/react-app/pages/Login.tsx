@@ -4,7 +4,7 @@ import { Button } from "@/react-app/components/ui/button";
 import { useAuth } from "@/react-app/context/AuthContext";
 import { useNavigate } from "react-router";
 
-type Tab = "login" | "register";
+type Tab = "login" | "register" | "forgot";
 
 export default function LoginPage() {
   const { fetchUser } = useAuth();
@@ -21,6 +21,33 @@ export default function LoginPage() {
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [regPassword2, setRegPassword2] = useState("");
+
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotMessage, setForgotMessage] = useState("");
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setForgotMessage("");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Bir hata oluştu");
+        return;
+      }
+      setForgotMessage(data.message || "E-posta adresiniz kayıtlıysa şifre sıfırlama bağlantısı gönderildi.");
+    } catch {
+      setError("Bağlantı hatası. Lütfen tekrar deneyin.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,7 +125,9 @@ export default function LoginPage() {
               className="h-24 w-auto"
             />
           </div>
-          <h2 className="text-3xl font-bold text-white mb-3">Saha Günlüğü</h2>
+          <h2 className="text-3xl font-bold text-white mb-3">
+            Sahanın Gurmeleri
+          </h2>
           <p className="text-white/75 text-lg leading-relaxed max-w-sm">
             Satış ekibinin keşfettiği en iyi restoranları tek platformda görün
             ve paylaşın.
@@ -137,7 +166,7 @@ export default function LoginPage() {
               alt="Hakan Makina"
               className="h-16 w-auto mx-auto mb-3"
             />
-            <h1 className="text-xl font-bold text-foreground">Saha Günlüğü</h1>
+            <h1 className="text-xl font-bold text-foreground">ünlüğü</h1>
           </div>
 
           <div className="bg-white rounded-2xl border border-border shadow-lg overflow-hidden">
@@ -239,6 +268,69 @@ export default function LoginPage() {
                       </span>
                     )}
                   </Button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTab("forgot");
+                      setError("");
+                      setForgotMessage("");
+                      setForgotEmail(loginEmail);
+                    }}
+                    className="w-full text-center text-xs text-muted-foreground hover:text-primary transition-colors mt-1"
+                  >
+                    Şifremi unuttum
+                  </button>
+                </form>
+              )}
+
+              {tab === "forgot" && (
+                <form onSubmit={handleForgotPassword} className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    E-posta adresini gir, şifre sıfırlama bağlantısını sana gönderelim.
+                  </p>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-foreground">
+                      E-posta
+                    </label>
+                    <input
+                      type="email"
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      placeholder="ornek@sirketiniz.com"
+                      required
+                      className={inputCls}
+                    />
+                  </div>
+                  {forgotMessage && (
+                    <div className="px-4 py-3 rounded-lg bg-primary/8 border border-primary/25 text-primary text-sm">
+                      {forgotMessage}
+                    </div>
+                  )}
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full h-11 hm-gradient text-white hover:opacity-90 border-0 rounded-lg font-semibold shadow-md mt-2"
+                  >
+                    {loading ? (
+                      <span className="flex items-center gap-2">
+                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Gönderiliyor...
+                      </span>
+                    ) : (
+                      "Sıfırlama Bağlantısı Gönder"
+                    )}
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTab("login");
+                      setError("");
+                      setForgotMessage("");
+                    }}
+                    className="w-full text-center text-xs text-muted-foreground hover:text-primary transition-colors mt-1"
+                  >
+                    Giriş ekranına dön
+                  </button>
                 </form>
               )}
 

@@ -2,7 +2,15 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import { HTTPException } from "hono/http-exception";
-import { CreateRestaurantSchema, CreateReviewSchema, UpdateProfileSchema, RegisterSchema, LoginSchema } from "@/shared/types";
+import {
+  CreateRestaurantSchema,
+  CreateReviewSchema,
+  UpdateProfileSchema,
+  RegisterSchema,
+  LoginSchema,
+  ForgotPasswordSchema,
+  ResetPasswordSchema,
+} from "@/shared/types";
 import type { AppUser } from "@/shared/types";
 import {
   hashPassword,
@@ -171,6 +179,80 @@ app.post("/api/auth/login", zValidator("json", LoginSchema), async (c) => {
   };
 
   return c.json(safeUser satisfies AppUser);
+});
+
+// Forgot password — always responds with a generic message to avoid leaking which emails are registered
+app.post("/api/auth/forgot-password", zValidator("json", ForgotPasswordSchema), async (c) => {
+  const { email } = c.req.valid("json");
+
+  const user = await c.env.DB.prepare("SELECT id FROM users WHERE email = ?")
+    .bind(email.toLowerCase())
+    .first<{ id: string }>();
+
+  if (user) {
+    const token = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    await c.env.DB.prepare(
+      "INSERT INTO password_reset_tokens (token, user_id, expires_at) VALUES (?, ?, ?)"
+    )
+      .bind(token, user.id, expiresAt)
+      .run();
+
+    const origin = new URL(c.req.url).origin;
+    const resetLink = `${origin}/#/reset-password?token=${token}`;
+
+    if (c.env.RESEND_API_KEY) {
+      try {
+        await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${c.env.RESEND_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            from: "Sahanın Gurmeleri <onboarding@resend.dev>",
+            to: [email],
+            subject: "Şifre Sıfırlama Talebi",
+            html: `<p>Merhaba,</p><p>Şifreni sıfırlamak için <a href="${resetLink}">bu bağlantıya</a> tıkla. Bağlantı 1 saat geçerlidir.</p><p>Bu talebi sen yapmadıysan bu e-postayı yok sayabilirsin.</p>`,
+          }),
+        });
+      } catch (err) {
+        console.error("Resend email error:", err);
+      }
+    } else {
+      console.warn("RESEND_API_KEY tanımlı değil, şifre sıfırlama e-postası gönderilemedi:", resetLink);
+    }
+  }
+
+  return c.json({
+    success: true,
+    message: "E-posta adresiniz kayıtlıysa şifre sıfırlama bağlantısı gönderildi.",
+  });
+});
+
+app.post("/api/auth/reset-password", zValidator("json", ResetPasswordSchema), async (c) => {
+  const { token, password } = c.req.valid("json");
+
+  const record = await c.env.DB.prepare(
+    "SELECT user_id, expires_at, used FROM password_reset_tokens WHERE token = ?"
+  )
+    .bind(token)
+    .first<{ user_id: string; expires_at: string; used: number }>();
+
+  if (!record || record.used || new Date(record.expires_at).getTime() < Date.now()) {
+    throw new HTTPException(400, { message: "Geçersiz veya süresi dolmuş bağlantı" });
+  }
+
+  const passwordHash = await hashPassword(password);
+  await c.env.DB.prepare("UPDATE users SET password_hash = ? WHERE id = ?")
+    .bind(passwordHash, record.user_id)
+    .run();
+  await c.env.DB.prepare("UPDATE password_reset_tokens SET used = 1 WHERE token = ?")
+    .bind(token)
+    .run();
+  await c.env.DB.prepare("DELETE FROM sessions WHERE user_id = ?").bind(record.user_id).run();
+
+  return c.json({ success: true });
 });
 
 // Get current user
