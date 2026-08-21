@@ -207,7 +207,6 @@ export function ReviewModal({ open, onClose, restaurantId, onSuccess }: ReviewMo
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              capture="environment"
               onChange={handlePhotoSelect}
               className="hidden"
             />

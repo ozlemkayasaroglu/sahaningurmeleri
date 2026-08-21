@@ -242,7 +242,6 @@ export function AddRestaurantModal({ open, onClose, onSuccess }: AddRestaurantMo
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              capture="environment"
               onChange={handlePhotoSelect}
               className="hidden"
             />

@@ -269,7 +269,6 @@ export default function ProfilePage() {
                     ref={avatarInputRef}
                     type="file"
                     accept="image/*"
-                    capture="environment"
                     onChange={handleAvatarSelect}
                     className="hidden"
                   />

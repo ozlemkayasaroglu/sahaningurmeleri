@@ -462,7 +462,6 @@ export function ReviewsListModal({
                       ref={replyFileInputRef}
                       type="file"
                       accept="image/*"
-                      capture="environment"
                       onChange={handleReplyPhotoSelect}
                       className="hidden"
                     />
