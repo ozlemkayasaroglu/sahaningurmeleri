@@ -337,10 +337,12 @@ app.get("/api/restaurants", async (c) => {
   try {
     const result = await c.env.DB.prepare(
       `SELECT r.id, r.name, r.city, r.district, r.food_type, r.comment,
-              r.added_by, r.added_by_avatar, r.added_by_id, r.created_at, r.lat, r.lng, r.photo_url,
+              r.added_by, COALESCE(u.avatar_url, r.added_by_avatar) AS added_by_avatar,
+              r.added_by_id, r.created_at, r.lat, r.lng, r.photo_url,
               AVG(rv.rating) AS average_rating, COUNT(rv.id) AS review_count
        FROM restaurants r
        LEFT JOIN reviews rv ON rv.restaurant_id = r.id
+       LEFT JOIN users u ON u.id = r.added_by_id
        GROUP BY r.id
        ORDER BY datetime(r.created_at) DESC`
     ).all();
@@ -375,10 +377,13 @@ app.get("/api/restaurants/:id/reviews", async (c) => {
   }
 
   const reviews = await c.env.DB.prepare(
-    `SELECT id, restaurant_id, rating, comment, added_by, added_by_avatar, created_at, photo_url
-     FROM reviews
-     WHERE restaurant_id = ?
-     ORDER BY datetime(created_at) DESC`
+    `SELECT rv.id, rv.restaurant_id, rv.rating, rv.comment, rv.added_by,
+            COALESCE(u.avatar_url, rv.added_by_avatar) AS added_by_avatar,
+            rv.created_at, rv.photo_url
+     FROM reviews rv
+     LEFT JOIN users u ON u.id = rv.added_by_id
+     WHERE rv.restaurant_id = ?
+     ORDER BY datetime(rv.created_at) DESC`
   )
     .bind(restaurantId)
     .all<ReviewRow>();
@@ -397,10 +402,13 @@ app.get("/api/restaurants/:id/reviews", async (c) => {
 
   const replies = reviewRows.length
     ? await c.env.DB.prepare(
-        `SELECT id, review_id, comment, added_by, added_by_avatar, created_at, photo_url
-         FROM review_replies
-         WHERE review_id IN (${reviewRows.map(() => "?").join(",")})
-         ORDER BY datetime(created_at) ASC`
+        `SELECT rep.id, rep.review_id, rep.comment, rep.added_by,
+                COALESCE(u.avatar_url, rep.added_by_avatar) AS added_by_avatar,
+                rep.created_at, rep.photo_url
+         FROM review_replies rep
+         LEFT JOIN users u ON u.id = rep.added_by_id
+         WHERE rep.review_id IN (${reviewRows.map(() => "?").join(",")})
+         ORDER BY datetime(rep.created_at) ASC`
       )
         .bind(...reviewRows.map((r) => r.id))
         .all<ReplyRow>()
@@ -463,10 +471,10 @@ app.post(
     const createdAt = new Date().toISOString();
 
     await c.env.DB.prepare(
-      `INSERT INTO review_replies (id, review_id, comment, added_by, added_by_avatar, created_at, photo_url)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO review_replies (id, review_id, comment, added_by, added_by_avatar, created_at, photo_url, added_by_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     )
-      .bind(replyId, reviewId, body.comment, user.name, user.avatar_url ?? null, createdAt, body.photoUrl || null)
+      .bind(replyId, reviewId, body.comment, user.name, user.avatar_url ?? null, createdAt, body.photoUrl || null, user.id)
       .run();
 
     const notifyTargets = new Map<string, string>();
@@ -548,8 +556,8 @@ app.post(
 
     await c.env.DB.prepare(
       `INSERT INTO reviews (
-        id, restaurant_id, rating, comment, added_by, added_by_avatar, created_at, photo_url
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        id, restaurant_id, rating, comment, added_by, added_by_avatar, created_at, photo_url, added_by_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
       .bind(
         reviewId,
@@ -559,7 +567,8 @@ app.post(
         user.name,
         user.avatar_url ?? null,
         createdAt,
-        body.photoUrl || null
+        body.photoUrl || null,
+        user.id
       )
       .run();
 
@@ -743,6 +752,12 @@ app.put(
 
     await c.env.DB.prepare(
       `UPDATE reviews SET added_by = ?, added_by_avatar = ? WHERE added_by = ?`
+    )
+      .bind(body.name, body.avatar_url || null, user.name)
+      .run();
+
+    await c.env.DB.prepare(
+      `UPDATE review_replies SET added_by = ?, added_by_avatar = ? WHERE added_by = ?`
     )
       .bind(body.name, body.avatar_url || null, user.name)
       .run();
