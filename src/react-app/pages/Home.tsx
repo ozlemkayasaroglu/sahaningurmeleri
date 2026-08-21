@@ -174,16 +174,30 @@ export default function Home() {
 
       {/* Hero banner */}
       <div className="hm-gradient">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-bold text-white">
-                Merhaba, {firstName}! 👋
-              </h2>
-              <p className="text-white/75 mt-1 text-sm">
-                Ekibimizin keşfettiği en iyi restoranları görün ve yeni yerler
-                ekleyin.
-              </p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-3">
+              {user?.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt={firstName}
+                  className="w-10 h-10 rounded-full object-cover ring-2 ring-white/25 shrink-0"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-white/15 flex items-center justify-center shrink-0">
+                  <span className="text-sm font-semibold text-white">
+                    {firstName.slice(0, 1).toUpperCase()}
+                  </span>
+                </div>
+              )}
+              <div>
+                <h2 className="text-lg font-semibold text-white leading-tight">
+                  Merhaba, {firstName}
+                </h2>
+                <p className="text-white/60 text-xs mt-0.5">
+                  Ekibin en iyi keşiflerine göz at
+                </p>
+              </div>
             </div>
             <QuickStats restaurants={restaurants} />
           </div>

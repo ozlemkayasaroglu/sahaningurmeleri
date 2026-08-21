@@ -25,14 +25,12 @@ export function QuickStats({ restaurants }: QuickStatsProps) {
   ];
 
   return (
-    <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+    <div className="flex items-center divide-x divide-white/15">
       {stats.map((s) => (
-        <div key={s.label} className="flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-lg px-3 py-2">
-          <s.icon className="w-4 h-4 text-white/80 shrink-0" />
-          <div>
-            <p className="text-base font-bold text-white leading-none">{s.value}</p>
-            <p className="text-xs text-white/70 leading-none mt-0.5">{s.label}</p>
-          </div>
+        <div key={s.label} className="flex items-center gap-1.5 px-3 first:pl-0 last:pr-0">
+          <s.icon className="w-3.5 h-3.5 text-white/60 shrink-0" />
+          <p className="text-sm font-semibold text-white leading-none">{s.value}</p>
+          <p className="text-xs text-white/60 leading-none">{s.label}</p>
         </div>
       ))}
     </div>
