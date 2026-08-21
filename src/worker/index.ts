@@ -524,6 +524,90 @@ app.post(
   }
 );
 
+app.delete("/api/reviews/:id", authMiddleware, async (c) => {
+  const reviewId = c.req.param("id");
+  const user = c.get("user");
+
+  const review = await c.env.DB.prepare(
+    "SELECT id, added_by, added_by_id FROM reviews WHERE id = ?"
+  )
+    .bind(reviewId)
+    .first<{ id: string; added_by: string; added_by_id: string | null }>();
+
+  if (!review) {
+    throw new HTTPException(404, { message: "Yorum bulunamadı" });
+  }
+  if (review.added_by_id !== user.id && review.added_by !== user.name) {
+    throw new HTTPException(403, { message: "Bu yorumu silme yetkiniz yok" });
+  }
+
+  await c.env.DB.prepare("DELETE FROM reviews WHERE id = ?").bind(reviewId).run();
+  return c.json({ success: true });
+});
+
+app.delete("/api/reviews/:id/photo", authMiddleware, async (c) => {
+  const reviewId = c.req.param("id");
+  const user = c.get("user");
+
+  const review = await c.env.DB.prepare(
+    "SELECT id, added_by, added_by_id FROM reviews WHERE id = ?"
+  )
+    .bind(reviewId)
+    .first<{ id: string; added_by: string; added_by_id: string | null }>();
+
+  if (!review) {
+    throw new HTTPException(404, { message: "Yorum bulunamadı" });
+  }
+  if (review.added_by_id !== user.id && review.added_by !== user.name) {
+    throw new HTTPException(403, { message: "Bu fotoğrafı silme yetkiniz yok" });
+  }
+
+  await c.env.DB.prepare("UPDATE reviews SET photo_url = NULL WHERE id = ?").bind(reviewId).run();
+  return c.json({ success: true });
+});
+
+app.delete("/api/replies/:id", authMiddleware, async (c) => {
+  const replyId = c.req.param("id");
+  const user = c.get("user");
+
+  const reply = await c.env.DB.prepare(
+    "SELECT id, added_by, added_by_id FROM review_replies WHERE id = ?"
+  )
+    .bind(replyId)
+    .first<{ id: string; added_by: string; added_by_id: string | null }>();
+
+  if (!reply) {
+    throw new HTTPException(404, { message: "Yanıt bulunamadı" });
+  }
+  if (reply.added_by_id !== user.id && reply.added_by !== user.name) {
+    throw new HTTPException(403, { message: "Bu yanıtı silme yetkiniz yok" });
+  }
+
+  await c.env.DB.prepare("DELETE FROM review_replies WHERE id = ?").bind(replyId).run();
+  return c.json({ success: true });
+});
+
+app.delete("/api/replies/:id/photo", authMiddleware, async (c) => {
+  const replyId = c.req.param("id");
+  const user = c.get("user");
+
+  const reply = await c.env.DB.prepare(
+    "SELECT id, added_by, added_by_id FROM review_replies WHERE id = ?"
+  )
+    .bind(replyId)
+    .first<{ id: string; added_by: string; added_by_id: string | null }>();
+
+  if (!reply) {
+    throw new HTTPException(404, { message: "Yanıt bulunamadı" });
+  }
+  if (reply.added_by_id !== user.id && reply.added_by !== user.name) {
+    throw new HTTPException(403, { message: "Bu fotoğrafı silme yetkiniz yok" });
+  }
+
+  await c.env.DB.prepare("UPDATE review_replies SET photo_url = NULL WHERE id = ?").bind(replyId).run();
+  return c.json({ success: true });
+});
+
 app.post(
   "/api/restaurants/:id/reviews",
   authMiddleware,

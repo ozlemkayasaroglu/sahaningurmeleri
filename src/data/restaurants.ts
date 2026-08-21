@@ -122,3 +122,23 @@ export async function postReply(reviewId: string, comment: string, photoUrl?: st
   }
   return data;
 }
+
+async function deleteRequest(url: string, errorMessage: string): Promise<void> {
+  const response = await fetch(url, { method: "DELETE" });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || errorMessage);
+  }
+}
+
+export const deleteReview = (reviewId: string) =>
+  deleteRequest(`/api/reviews/${reviewId}`, "Yorum silinemedi");
+
+export const deleteReviewPhoto = (reviewId: string) =>
+  deleteRequest(`/api/reviews/${reviewId}/photo`, "Fotoğraf silinemedi");
+
+export const deleteReply = (replyId: string) =>
+  deleteRequest(`/api/replies/${replyId}`, "Yanıt silinemedi");
+
+export const deleteReplyPhoto = (replyId: string) =>
+  deleteRequest(`/api/replies/${replyId}/photo`, "Fotoğraf silinemedi");

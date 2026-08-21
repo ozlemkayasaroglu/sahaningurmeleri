@@ -135,6 +135,7 @@ export default function Home() {
           restaurantId={viewReviewsTarget.id}
           restaurantName={viewReviewsTarget.name}
           highlightReviewId={highlightReviewId}
+          onReviewsChanged={() => fetchRestaurants().then(setRestaurants).catch(console.error)}
         />
       )}
 

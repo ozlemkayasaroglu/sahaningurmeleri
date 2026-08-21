@@ -1,6 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { Star, User, X, MessageCircle, Send, Camera, Loader2, AtSign } from "lucide-react";
-import { fetchReviews, fetchUsers, postReply, Review, TaggableUser } from "@/data/restaurants";
+import { Star, User, X, MessageCircle, Send, Camera, Loader2, AtSign, Trash2 } from "lucide-react";
+import {
+  fetchReviews,
+  fetchUsers,
+  postReply,
+  deleteReview,
+  deleteReviewPhoto,
+  deleteReply,
+  deleteReplyPhoto,
+  Review,
+  TaggableUser,
+} from "@/data/restaurants";
 import { useAuth } from "@/react-app/context/AuthContext";
 
 interface ReviewsListModalProps {
@@ -9,6 +19,7 @@ interface ReviewsListModalProps {
   restaurantId: string;
   restaurantName: string;
   highlightReviewId?: string | null;
+  onReviewsChanged?: () => void;
 }
 
 function formatDate(d: string) {
@@ -42,6 +53,7 @@ export function ReviewsListModal({
   restaurantId,
   restaurantName,
   highlightReviewId,
+  onReviewsChanged,
 }: ReviewsListModalProps) {
   const { user } = useAuth();
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -148,6 +160,64 @@ export function ReviewsListModal({
     }
   };
 
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!window.confirm("Bu yorumu silmek istediğine emin misin?")) return;
+    try {
+      await deleteReview(reviewId);
+      setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+      onReviewsChanged?.();
+    } catch (error) {
+      console.error(error);
+      alert(error instanceof Error ? error.message : "Yorum silinirken bir hata oluştu.");
+    }
+  };
+
+  const handleDeleteReviewPhoto = async (reviewId: string) => {
+    try {
+      await deleteReviewPhoto(reviewId);
+      setReviews((prev) => prev.map((r) => (r.id === reviewId ? { ...r, photoUrl: undefined } : r)));
+    } catch (error) {
+      console.error(error);
+      alert(error instanceof Error ? error.message : "Fotoğraf silinirken bir hata oluştu.");
+    }
+  };
+
+  const handleDeleteReply = async (reviewId: string, replyId: string) => {
+    if (!window.confirm("Bu yanıtı silmek istediğine emin misin?")) return;
+    try {
+      await deleteReply(replyId);
+      setReviews((prev) =>
+        prev.map((r) =>
+          r.id === reviewId ? { ...r, replies: (r.replies ?? []).filter((rep) => rep.id !== replyId) } : r
+        )
+      );
+    } catch (error) {
+      console.error(error);
+      alert(error instanceof Error ? error.message : "Yanıt silinirken bir hata oluştu.");
+    }
+  };
+
+  const handleDeleteReplyPhoto = async (reviewId: string, replyId: string) => {
+    try {
+      await deleteReplyPhoto(replyId);
+      setReviews((prev) =>
+        prev.map((r) =>
+          r.id === reviewId
+            ? {
+                ...r,
+                replies: (r.replies ?? []).map((rep) =>
+                  rep.id === replyId ? { ...rep, photoUrl: undefined } : rep
+                ),
+              }
+            : r
+        )
+      );
+    } catch (error) {
+      console.error(error);
+      alert(error instanceof Error ? error.message : "Fotoğraf silinirken bir hata oluştu.");
+    }
+  };
+
   useEffect(() => {
     if (!open) return;
     setLoading(true);
@@ -227,29 +297,51 @@ export function ReviewsListModal({
                       {r.addedBy}
                     </span>
                   </div>
-                  <div className="flex items-center gap-0.5 shrink-0">
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <Star
-                        key={s}
-                        size={13}
-                        className={
-                          s <= r.rating
-                            ? "fill-amber-400 text-amber-400"
-                            : "fill-muted text-muted"
-                        }
-                      />
-                    ))}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-0.5">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star
+                          key={s}
+                          size={13}
+                          className={
+                            s <= r.rating
+                              ? "fill-amber-400 text-amber-400"
+                              : "fill-muted text-muted"
+                          }
+                        />
+                      ))}
+                    </div>
+                    {user?.name === r.addedBy && (
+                      <button
+                        onClick={() => handleDeleteReview(r.id)}
+                        className="text-muted-foreground hover:text-destructive transition-colors"
+                        title="Yorumu sil"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   "{renderCommentWithMentions(r.comment, users)}"
                 </p>
                 {r.photoUrl && (
-                  <img
-                    src={r.photoUrl}
-                    alt="Yorum fotoğrafı"
-                    className="w-full h-40 object-cover rounded-lg"
-                  />
+                  <div className="relative w-full">
+                    <img
+                      src={r.photoUrl}
+                      alt="Yorum fotoğrafı"
+                      className="w-full h-40 object-cover rounded-lg"
+                    />
+                    {user?.name === r.addedBy && (
+                      <button
+                        onClick={() => handleDeleteReviewPhoto(r.id)}
+                        className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 hover:bg-black/80 flex items-center justify-center transition-colors"
+                        title="Fotoğrafı sil"
+                      >
+                        <X className="w-3.5 h-3.5 text-white" />
+                      </button>
+                    )}
+                  </div>
                 )}
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs text-muted-foreground/70">
@@ -284,16 +376,36 @@ export function ReviewsListModal({
                           )}
                           <span className="text-xs font-medium text-foreground">{rep.addedBy}</span>
                           <span className="text-[11px] text-muted-foreground/70">{formatDate(rep.createdAt)}</span>
+                          {user?.name === rep.addedBy && (
+                            <button
+                              onClick={() => handleDeleteReply(r.id, rep.id)}
+                              className="text-muted-foreground hover:text-destructive transition-colors ml-auto"
+                              title="Yanıtı sil"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          )}
                         </div>
                         <p className="text-xs text-muted-foreground leading-relaxed">
                           {renderCommentWithMentions(rep.comment, users)}
                         </p>
                         {rep.photoUrl && (
-                          <img
-                            src={rep.photoUrl}
-                            alt="Yanıt fotoğrafı"
-                            className="w-full max-w-[240px] h-28 object-cover rounded-lg"
-                          />
+                          <div className="relative w-fit">
+                            <img
+                              src={rep.photoUrl}
+                              alt="Yanıt fotoğrafı"
+                              className="w-full max-w-[240px] h-28 object-cover rounded-lg"
+                            />
+                            {user?.name === rep.addedBy && (
+                              <button
+                                onClick={() => handleDeleteReplyPhoto(r.id, rep.id)}
+                                className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 hover:bg-black/80 flex items-center justify-center transition-colors"
+                                title="Fotoğrafı sil"
+                              >
+                                <X className="w-3 h-3 text-white" />
+                              </button>
+                            )}
+                          </div>
                         )}
                       </div>
                     ))}
