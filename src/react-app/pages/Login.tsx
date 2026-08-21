@@ -28,10 +28,6 @@ export default function LoginPage() {
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotMessage, setForgotMessage] = useState("");
 
-  const [registerMessage, setRegisterMessage] = useState("");
-  const [needsActivation, setNeedsActivation] = useState(false);
-  const [resendMessage, setResendMessage] = useState("");
-
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -59,8 +55,6 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setNeedsActivation(false);
-    setResendMessage("");
     setLoading(true);
     try {
       const res = await fetch("/api/auth/login", {
@@ -71,7 +65,6 @@ export default function LoginPage() {
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Giriş başarısız");
-        if (res.status === 403) setNeedsActivation(true);
         return;
       }
       await fetchUser();
@@ -83,28 +76,9 @@ export default function LoginPage() {
     }
   };
 
-  const handleResendActivation = async () => {
-    setResendMessage("");
-    setLoading(true);
-    try {
-      const res = await fetch("/api/auth/resend-activation", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: loginEmail }),
-      });
-      const data = await res.json();
-      setResendMessage(data.message || "Aktivasyon bağlantısı yeniden gönderildi.");
-    } catch {
-      setResendMessage("Bağlantı hatası. Lütfen tekrar deneyin.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setRegisterMessage("");
     if (regPassword !== regPassword2) {
       setError("Şifreler eşleşmiyor");
       return;
@@ -130,14 +104,8 @@ export default function LoginPage() {
         setError(data.error || "Kayıt başarısız");
         return;
       }
-      setRegisterMessage(
-        data.message || "Kaydın alındı! Hesabını aktive etmek için e-postana gönderdiğimiz bağlantıya tıkla."
-      );
-      setRegName("");
-      setRegEmail("");
-      setRegPassword("");
-      setRegPassword2("");
-      setKvkkConsent(false);
+      await fetchUser();
+      navigate("/");
     } catch {
       setError("Bağlantı hatası. Lütfen tekrar deneyin.");
     } finally {
@@ -216,8 +184,6 @@ export default function LoginPage() {
                 onClick={() => {
                   setTab("login");
                   setError("");
-                  setNeedsActivation(false);
-                  setResendMessage("");
                 }}
                 className={`flex-1 flex items-center justify-center gap-2 py-4 text-sm font-semibold transition-all ${
                   tab === "login"
@@ -232,7 +198,6 @@ export default function LoginPage() {
                 onClick={() => {
                   setTab("register");
                   setError("");
-                  setRegisterMessage("");
                 }}
                 className={`flex-1 flex items-center justify-center gap-2 py-4 text-sm font-semibold transition-all ${
                   tab === "register"
@@ -250,32 +215,6 @@ export default function LoginPage() {
                 <div className="mb-5 px-4 py-3 rounded-lg bg-destructive/8 border border-destructive/25 text-destructive text-sm flex items-start gap-2">
                   <span className="mt-0.5">⚠</span>
                   <span>{error}</span>
-                </div>
-              )}
-
-              {needsActivation && tab === "login" && (
-                <div className="mb-5 px-4 py-3 rounded-lg bg-muted/50 border border-border text-sm text-muted-foreground space-y-2">
-                  {resendMessage ? (
-                    <p>{resendMessage}</p>
-                  ) : (
-                    <>
-                      <p>Aktivasyon e-postası ulaşmadıysa yeniden gönderebiliriz.</p>
-                      <button
-                        type="button"
-                        onClick={handleResendActivation}
-                        disabled={loading}
-                        className="text-primary font-medium hover:underline"
-                      >
-                        Aktivasyon bağlantısını yeniden gönder
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {tab === "register" && registerMessage && (
-                <div className="mb-5 px-4 py-3 rounded-lg bg-primary/8 border border-primary/25 text-primary text-sm">
-                  {registerMessage}
                 </div>
               )}
 
@@ -403,7 +342,7 @@ export default function LoginPage() {
                 </form>
               )}
 
-              {tab === "register" && !registerMessage && (
+              {tab === "register" && (
                 <form onSubmit={handleRegister} className="space-y-4">
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-foreground">

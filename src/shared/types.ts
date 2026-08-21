@@ -70,15 +70,10 @@ export const ResetPasswordSchema = z.object({
   password: z.string().min(6, "Şifre en az 6 karakter olmalıdır"),
 });
 
-export const ActivateAccountSchema = z.object({
-  token: z.string().min(1, "Geçersiz bağlantı"),
-});
-
 export type RegisterInput = z.infer<typeof RegisterSchema>;
 export type LoginInput = z.infer<typeof LoginSchema>;
 export type ForgotPasswordInput = z.infer<typeof ForgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof ResetPasswordSchema>;
-export type ActivateAccountInput = z.infer<typeof ActivateAccountSchema>;
 
 // ─── User (client-safe, no password_hash) ────────────────────────────────────
 
