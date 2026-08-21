@@ -3,6 +3,7 @@ import { ArrowLeft, Eye, EyeOff, LogIn, UserPlus } from "lucide-react";
 import { Button } from "@/react-app/components/ui/button";
 import { useAuth } from "@/react-app/context/AuthContext";
 import { useNavigate } from "react-router";
+import { KvkkModal } from "@/react-app/components/KvkkModal";
 
 type Tab = "login" | "register" | "forgot";
 
@@ -21,6 +22,8 @@ export default function LoginPage() {
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [regPassword2, setRegPassword2] = useState("");
+  const [kvkkConsent, setKvkkConsent] = useState(false);
+  const [kvkkModalOpen, setKvkkModalOpen] = useState(false);
 
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotMessage, setForgotMessage] = useState("");
@@ -80,6 +83,10 @@ export default function LoginPage() {
       setError("Şifreler eşleşmiyor");
       return;
     }
+    if (!kvkkConsent) {
+      setError("Devam etmek için KVKK Aydınlatma Metni ve Açık Rıza Beyanı'nı onaylamanız gerekiyor");
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch("/api/auth/register", {
@@ -89,6 +96,7 @@ export default function LoginPage() {
           name: regName,
           email: regEmail,
           password: regPassword,
+          kvkkConsent,
         }),
       });
       const data = await res.json();
@@ -408,9 +416,27 @@ export default function LoginPage() {
                       </p>
                     )}
                   </div>
+                  <label className="flex items-start gap-2.5 text-xs text-muted-foreground cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={kvkkConsent}
+                      onChange={(e) => setKvkkConsent(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 rounded border-border text-primary focus:ring-primary/40 shrink-0"
+                    />
+                    <span>
+                      <button
+                        type="button"
+                        onClick={() => setKvkkModalOpen(true)}
+                        className="text-primary font-medium hover:underline"
+                      >
+                        KVKK Aydınlatma Metni ve Açık Rıza Beyanı
+                      </button>
+                      'nı okudum, kabul ediyorum.
+                    </span>
+                  </label>
                   <Button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || !kvkkConsent}
                     className="w-full h-11 hm-gradient text-white hover:opacity-90 border-0 rounded-lg font-semibold shadow-md mt-2"
                   >
                     {loading ? (
@@ -436,6 +462,8 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      <KvkkModal open={kvkkModalOpen} onClose={() => setKvkkModalOpen(false)} />
     </div>
   );
 }

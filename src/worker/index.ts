@@ -113,11 +113,12 @@ app.post("/api/auth/register", zValidator("json", RegisterSchema), async (c) => 
   const id = crypto.randomUUID();
   const passwordHash = await hashPassword(password);
   const role = roleForEmail(email);
+  const kvkkConsentAt = new Date().toISOString();
 
   await c.env.DB.prepare(
-    "INSERT INTO users (id, name, email, password_hash, role) VALUES (?, ?, ?, ?, ?)"
+    "INSERT INTO users (id, name, email, password_hash, role, kvkk_consent_at) VALUES (?, ?, ?, ?, ?, ?)"
   )
-    .bind(id, name, email.toLowerCase(), passwordHash, role)
+    .bind(id, name, email.toLowerCase(), passwordHash, role, kvkkConsentAt)
     .run();
 
   // Auto-login after register
