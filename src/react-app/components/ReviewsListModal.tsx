@@ -212,9 +212,17 @@ export function ReviewsListModal({
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <User size={13} className="text-primary" />
-                    </div>
+                    {r.addedByAvatar ? (
+                      <img
+                        src={r.addedByAvatar}
+                        alt={r.addedBy}
+                        className="w-7 h-7 rounded-full object-cover shrink-0"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <User size={13} className="text-primary" />
+                      </div>
+                    )}
                     <span className="text-sm font-medium text-foreground">
                       {r.addedBy}
                     </span>
@@ -263,6 +271,17 @@ export function ReviewsListModal({
                     {r.replies!.map((rep) => (
                       <div key={rep.id} className="space-y-1">
                         <div className="flex items-center gap-1.5">
+                          {rep.addedByAvatar ? (
+                            <img
+                              src={rep.addedByAvatar}
+                              alt={rep.addedBy}
+                              className="w-5 h-5 rounded-full object-cover shrink-0"
+                            />
+                          ) : (
+                            <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                              <User size={10} className="text-primary" />
+                            </div>
+                          )}
                           <span className="text-xs font-medium text-foreground">{rep.addedBy}</span>
                           <span className="text-[11px] text-muted-foreground/70">{formatDate(rep.createdAt)}</span>
                         </div>
