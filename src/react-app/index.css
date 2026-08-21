@@ -7,6 +7,10 @@
 
 @layer base {
   :root {
+    /* Uygulamanın henüz karanlık tema desteği yok; tarayıcının
+       otomatik karanlık mod ile logo/görselleri bozmasını engelle. */
+    color-scheme: light;
+
     /* ── Hakan Makina Kurumsal Tema ──────────────────────────────
        #204080  koyu lacivert  → primary
        #0090c0  cyan mavi      → accent
