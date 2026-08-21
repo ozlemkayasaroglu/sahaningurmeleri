@@ -392,11 +392,12 @@ app.get("/api/restaurants/:id/reviews", async (c) => {
     added_by: string;
     added_by_avatar: string | null;
     created_at: string;
+    photo_url: string | null;
   }
 
   const replies = reviewRows.length
     ? await c.env.DB.prepare(
-        `SELECT id, review_id, comment, added_by, added_by_avatar, created_at
+        `SELECT id, review_id, comment, added_by, added_by_avatar, created_at, photo_url
          FROM review_replies
          WHERE review_id IN (${reviewRows.map(() => "?").join(",")})
          ORDER BY datetime(created_at) ASC`
@@ -429,6 +430,7 @@ app.get("/api/restaurants/:id/reviews", async (c) => {
         addedBy: rep.added_by,
         addedByAvatar: rep.added_by_avatar ?? undefined,
         createdAt: rep.created_at,
+        photoUrl: rep.photo_url ?? undefined,
       })),
     }))
   );
@@ -461,10 +463,10 @@ app.post(
     const createdAt = new Date().toISOString();
 
     await c.env.DB.prepare(
-      `INSERT INTO review_replies (id, review_id, comment, added_by, added_by_avatar, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)`
+      `INSERT INTO review_replies (id, review_id, comment, added_by, added_by_avatar, created_at, photo_url)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
     )
-      .bind(replyId, reviewId, body.comment, user.name, user.avatar_url ?? null, createdAt)
+      .bind(replyId, reviewId, body.comment, user.name, user.avatar_url ?? null, createdAt, body.photoUrl || null)
       .run();
 
     const notifyTargets = new Map<string, string>();
@@ -509,6 +511,7 @@ app.post(
       addedBy: user.name,
       addedByAvatar: user.avatar_url ?? undefined,
       createdAt,
+      photoUrl: body.photoUrl || undefined,
     }, 201);
   }
 );

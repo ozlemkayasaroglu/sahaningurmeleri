@@ -22,6 +22,7 @@ export interface ReviewReply {
   addedBy: string;
   addedByAvatar?: string;
   createdAt: string;
+  photoUrl?: string;
 }
 
 export interface Review {
@@ -109,11 +110,11 @@ export async function fetchReviews(restaurantId: string): Promise<Review[]> {
   }
 }
 
-export async function postReply(reviewId: string, comment: string): Promise<ReviewReply> {
+export async function postReply(reviewId: string, comment: string, photoUrl?: string): Promise<ReviewReply> {
   const response = await fetch(`/api/reviews/${reviewId}/replies`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ comment }),
+    body: JSON.stringify({ comment, photoUrl: photoUrl || "" }),
   });
   const data = await response.json();
   if (!response.ok) {

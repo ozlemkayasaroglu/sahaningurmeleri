@@ -32,6 +32,7 @@ export const CreateReviewSchema = z.object({
 
 export const CreateReplySchema = z.object({
   comment: z.string().min(1, "Yanıt zorunludur"),
+  photoUrl: PhotoUrlSchema,
 });
 
 export const UpdateProfileSchema = z.object({
