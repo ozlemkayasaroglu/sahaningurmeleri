@@ -10,6 +10,7 @@ import {
   LoginSchema,
   ForgotPasswordSchema,
   ResetPasswordSchema,
+  ActivateAccountSchema,
   CreateReplySchema,
 } from "@/shared/types";
 import type { AppUser } from "@/shared/types";
@@ -96,6 +97,36 @@ function setSessionCookie(c: Parameters<typeof setCookie>[0], token: string) {
   });
 }
 
+async function sendEmail(
+  env: Env,
+  opts: { to: string; subject: string; html: string }
+): Promise<void> {
+  if (!env.RESEND_API_KEY) {
+    console.warn("RESEND_API_KEY tanımlı değil, e-posta gönderilemedi:", opts.subject, opts.to);
+    return;
+  }
+  try {
+    const resendResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "Sahanın Gurmeleri <noreply@hakanismakinalari.com>",
+        to: [opts.to],
+        subject: opts.subject,
+        html: opts.html,
+      }),
+    });
+    if (!resendResponse.ok) {
+      console.error("Resend email error:", resendResponse.status, await resendResponse.text());
+    }
+  } catch (err) {
+    console.error("Resend email error:", err);
+  }
+}
+
 // ─── Auth routes ──────────────────────────────────────────────────────────────
 
 // Register
@@ -116,30 +147,31 @@ app.post("/api/auth/register", zValidator("json", RegisterSchema), async (c) => 
   const kvkkConsentAt = new Date().toISOString();
 
   await c.env.DB.prepare(
-    "INSERT INTO users (id, name, email, password_hash, role, kvkk_consent_at) VALUES (?, ?, ?, ?, ?, ?)"
+    "INSERT INTO users (id, name, email, password_hash, role, kvkk_consent_at, is_active) VALUES (?, ?, ?, ?, ?, ?, 0)"
   )
     .bind(id, name, email.toLowerCase(), passwordHash, role, kvkkConsentAt)
     .run();
 
-  // Auto-login after register
-  const token = generateSessionToken();
-  const expiresAt = new Date(Date.now() + SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const activationToken = crypto.randomUUID();
+  const activationExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
   await c.env.DB.prepare(
-    "INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)"
+    "INSERT INTO email_verification_tokens (token, user_id, expires_at) VALUES (?, ?, ?)"
   )
-    .bind(token, id, expiresAt)
+    .bind(activationToken, id, activationExpiresAt)
     .run();
 
-  setSessionCookie(c, token);
+  const origin = new URL(c.req.url).origin;
+  const activationLink = `${origin}/#/activate?token=${activationToken}`;
+  await sendEmail(c.env, {
+    to: email.toLowerCase(),
+    subject: "Hesabını Aktive Et",
+    html: `<p>Merhaba ${name},</p><p>Sahanın Gurmeleri hesabını aktive etmek için <a href="${activationLink}">bu bağlantıya</a> tıkla. Bağlantı 24 saat geçerlidir.</p><p>Bu kaydı sen yapmadıysan bu e-postayı yok sayabilirsin.</p>`,
+  });
 
   return c.json({
-    id,
-    name,
-    email: email.toLowerCase(),
-    avatar_url: null,
-    role,
-    created_at: new Date().toISOString(),
-  } satisfies AppUser, 201);
+    success: true,
+    message: "Kaydın alındı! Hesabını aktive etmek için e-postana gönderdiğimiz bağlantıya tıkla.",
+  }, 201);
 });
 
 // Login
@@ -147,10 +179,10 @@ app.post("/api/auth/login", zValidator("json", LoginSchema), async (c) => {
   const { email, password } = c.req.valid("json");
 
   const user = await c.env.DB.prepare(
-    "SELECT id, name, email, password_hash, avatar_url, role, created_at FROM users WHERE email = ?"
+    "SELECT id, name, email, password_hash, avatar_url, role, created_at, is_active FROM users WHERE email = ?"
   )
     .bind(email.toLowerCase())
-    .first<{ id: string; name: string; email: string; password_hash: string; avatar_url: string | null; role: string; created_at: string }>();
+    .first<{ id: string; name: string; email: string; password_hash: string; avatar_url: string | null; role: string; created_at: string; is_active: number }>();
 
   if (!user) {
     throw new HTTPException(401, { message: "E-posta veya şifre hatalı" });
@@ -159,6 +191,12 @@ app.post("/api/auth/login", zValidator("json", LoginSchema), async (c) => {
   const valid = await verifyPassword(password, user.password_hash);
   if (!valid) {
     throw new HTTPException(401, { message: "E-posta veya şifre hatalı" });
+  }
+
+  if (!user.is_active) {
+    throw new HTTPException(403, {
+      message: "Hesabını henüz aktive etmedin. E-postana gönderdiğimiz bağlantıya tıklaman gerekiyor.",
+    });
   }
 
   const token = generateSessionToken();
@@ -203,30 +241,11 @@ app.post("/api/auth/forgot-password", zValidator("json", ForgotPasswordSchema), 
     const origin = new URL(c.req.url).origin;
     const resetLink = `${origin}/#/reset-password?token=${token}`;
 
-    if (c.env.RESEND_API_KEY) {
-      try {
-        const resendResponse = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${c.env.RESEND_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: "Sahanın Gurmeleri <noreply@hakanismakinalari.com>",
-            to: [email],
-            subject: "Şifre Sıfırlama Talebi",
-            html: `<p>Merhaba,</p><p>Şifreni sıfırlamak için <a href="${resetLink}">bu bağlantıya</a> tıkla. Bağlantı 1 saat geçerlidir.</p><p>Bu talebi sen yapmadıysan bu e-postayı yok sayabilirsin.</p>`,
-          }),
-        });
-        if (!resendResponse.ok) {
-          console.error("Resend email error:", resendResponse.status, await resendResponse.text());
-        }
-      } catch (err) {
-        console.error("Resend email error:", err);
-      }
-    } else {
-      console.warn("RESEND_API_KEY tanımlı değil, şifre sıfırlama e-postası gönderilemedi:", resetLink);
-    }
+    await sendEmail(c.env, {
+      to: email.toLowerCase(),
+      subject: "Şifre Sıfırlama Talebi",
+      html: `<p>Merhaba,</p><p>Şifreni sıfırlamak için <a href="${resetLink}">bu bağlantıya</a> tıkla. Bağlantı 1 saat geçerlidir.</p><p>Bu talebi sen yapmadıysan bu e-postayı yok sayabilirsin.</p>`,
+    });
   }
 
   return c.json({
@@ -259,6 +278,79 @@ app.post("/api/auth/reset-password", zValidator("json", ResetPasswordSchema), as
 
   return c.json({ success: true });
 });
+
+app.post("/api/auth/activate", zValidator("json", ActivateAccountSchema), async (c) => {
+  const { token } = c.req.valid("json");
+
+  const record = await c.env.DB.prepare(
+    "SELECT user_id, expires_at, used FROM email_verification_tokens WHERE token = ?"
+  )
+    .bind(token)
+    .first<{ user_id: string; expires_at: string; used: number }>();
+
+  if (!record || record.used || new Date(record.expires_at).getTime() < Date.now()) {
+    throw new HTTPException(400, { message: "Geçersiz veya süresi dolmuş bağlantı" });
+  }
+
+  await c.env.DB.prepare("UPDATE users SET is_active = 1 WHERE id = ?").bind(record.user_id).run();
+  await c.env.DB.prepare("UPDATE email_verification_tokens SET used = 1 WHERE token = ?")
+    .bind(token)
+    .run();
+
+  const user = await c.env.DB.prepare(
+    "SELECT id, name, email, avatar_url, role, created_at FROM users WHERE id = ?"
+  )
+    .bind(record.user_id)
+    .first<{ id: string; name: string; email: string; avatar_url: string | null; role: string; created_at: string }>();
+
+  if (!user) {
+    throw new HTTPException(404, { message: "Kullanıcı bulunamadı" });
+  }
+
+  const sessionToken = generateSessionToken();
+  const expiresAt = new Date(Date.now() + SESSION_DURATION_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  await c.env.DB.prepare("INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)")
+    .bind(sessionToken, user.id, expiresAt)
+    .run();
+  setSessionCookie(c, sessionToken);
+
+  return c.json(user satisfies AppUser);
+});
+
+app.post(
+  "/api/auth/resend-activation",
+  zValidator("json", ForgotPasswordSchema),
+  async (c) => {
+    const { email } = c.req.valid("json");
+
+    const user = await c.env.DB.prepare("SELECT id, name, is_active FROM users WHERE email = ?")
+      .bind(email.toLowerCase())
+      .first<{ id: string; name: string; is_active: number }>();
+
+    if (user && !user.is_active) {
+      const token = crypto.randomUUID();
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      await c.env.DB.prepare(
+        "INSERT INTO email_verification_tokens (token, user_id, expires_at) VALUES (?, ?, ?)"
+      )
+        .bind(token, user.id, expiresAt)
+        .run();
+
+      const origin = new URL(c.req.url).origin;
+      const activationLink = `${origin}/#/activate?token=${token}`;
+      await sendEmail(c.env, {
+        to: email.toLowerCase(),
+        subject: "Hesabını Aktive Et",
+        html: `<p>Merhaba ${user.name},</p><p>Hesabını aktive etmek için <a href="${activationLink}">bu bağlantıya</a> tıkla. Bağlantı 24 saat geçerlidir.</p>`,
+      });
+    }
+
+    return c.json({
+      success: true,
+      message: "E-posta adresiniz kayıtlıysa aktivasyon bağlantısı yeniden gönderildi.",
+    });
+  }
+);
 
 // Get current user
 app.get("/api/auth/me", authMiddleware, (c) => {
