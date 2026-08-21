@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
+import type { ZodType } from "zod";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import { HTTPException } from "hono/http-exception";
 import {
@@ -27,6 +28,18 @@ import { authMiddleware, requireStaff } from "./middleware";
 type Variables = { user: AppUser };
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
+
+// zValidator, doğrulama başarısız olunca varsayılan olarak ham bir ZodError
+// nesnesi döndürür; frontend bunu string bekleyip render etmeye çalışınca
+// çöküyordu. Bu sarmalayıcı, hep okunabilir bir { error: string } döndürür.
+function jsonBody<T extends ZodType>(schema: T) {
+  return zValidator("json", schema, (result, c) => {
+    if (!result.success) {
+      const message = result.error.issues[0]?.message ?? "Geçersiz istek";
+      return c.json({ error: message }, 400);
+    }
+  });
+}
 
 interface Restaurant {
   id: string;
@@ -130,7 +143,7 @@ async function sendEmail(
 // ─── Auth routes ──────────────────────────────────────────────────────────────
 
 // Register
-app.post("/api/auth/register", zValidator("json", RegisterSchema), async (c) => {
+app.post("/api/auth/register", jsonBody(RegisterSchema), async (c) => {
   const { name, email, password } = c.req.valid("json");
 
   const existing = await c.env.DB.prepare("SELECT id FROM users WHERE email = ?")
@@ -175,7 +188,7 @@ app.post("/api/auth/register", zValidator("json", RegisterSchema), async (c) => 
 });
 
 // Login
-app.post("/api/auth/login", zValidator("json", LoginSchema), async (c) => {
+app.post("/api/auth/login", jsonBody(LoginSchema), async (c) => {
   const { email, password } = c.req.valid("json");
 
   const user = await c.env.DB.prepare(
@@ -222,7 +235,7 @@ app.post("/api/auth/login", zValidator("json", LoginSchema), async (c) => {
 });
 
 // Forgot password — always responds with a generic message to avoid leaking which emails are registered
-app.post("/api/auth/forgot-password", zValidator("json", ForgotPasswordSchema), async (c) => {
+app.post("/api/auth/forgot-password", jsonBody(ForgotPasswordSchema), async (c) => {
   const { email } = c.req.valid("json");
 
   const user = await c.env.DB.prepare("SELECT id FROM users WHERE email = ?")
@@ -254,7 +267,7 @@ app.post("/api/auth/forgot-password", zValidator("json", ForgotPasswordSchema), 
   });
 });
 
-app.post("/api/auth/reset-password", zValidator("json", ResetPasswordSchema), async (c) => {
+app.post("/api/auth/reset-password", jsonBody(ResetPasswordSchema), async (c) => {
   const { token, password } = c.req.valid("json");
 
   const record = await c.env.DB.prepare(
@@ -279,7 +292,7 @@ app.post("/api/auth/reset-password", zValidator("json", ResetPasswordSchema), as
   return c.json({ success: true });
 });
 
-app.post("/api/auth/activate", zValidator("json", ActivateAccountSchema), async (c) => {
+app.post("/api/auth/activate", jsonBody(ActivateAccountSchema), async (c) => {
   const { token } = c.req.valid("json");
 
   const record = await c.env.DB.prepare(
@@ -319,7 +332,7 @@ app.post("/api/auth/activate", zValidator("json", ActivateAccountSchema), async 
 
 app.post(
   "/api/auth/resend-activation",
-  zValidator("json", ForgotPasswordSchema),
+  jsonBody(ForgotPasswordSchema),
   async (c) => {
     const { email } = c.req.valid("json");
 
@@ -540,7 +553,7 @@ app.get("/api/restaurants/:id/reviews", async (c) => {
 app.post(
   "/api/reviews/:id/replies",
   authMiddleware,
-  zValidator("json", CreateReplySchema),
+  jsonBody(CreateReplySchema),
   async (c) => {
     const reviewId = c.req.param("id");
     const body = c.req.valid("json");
@@ -704,7 +717,7 @@ app.delete("/api/replies/:id/photo", authMiddleware, async (c) => {
 app.post(
   "/api/restaurants/:id/reviews",
   authMiddleware,
-  zValidator("json", CreateReviewSchema),
+  jsonBody(CreateReviewSchema),
   async (c) => {
     const restaurantId = c.req.param("id");
     const body = c.req.valid("json");
@@ -828,7 +841,7 @@ app.post(
   "/api/restaurants",
   authMiddleware,
   requireStaff,
-  zValidator("json", CreateRestaurantSchema),
+  jsonBody(CreateRestaurantSchema),
   async (c) => {
     const body = c.req.valid("json");
     const user = c.get("user");
@@ -910,7 +923,7 @@ app.delete(
 app.put(
   "/api/auth/me",
   authMiddleware,
-  zValidator("json", UpdateProfileSchema),
+  jsonBody(UpdateProfileSchema),
   async (c) => {
     const body = c.req.valid("json");
     const user = c.get("user");
