@@ -48,13 +48,20 @@ export function Header({ activeView, onViewChange, onAddClick }: HeaderProps) {
               className="h-16 w-auto"
             />
             <div className="hidden lg:block w-px h-8 bg-border" />
-            <div className="hidden lg:block">
-              <p className="text-md font-semibold text-foreground leading-none">
-                Sahanın Gurmeleri
-              </p>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                Restoran Keşif Platformu
-              </p>
+            <div className="hidden lg:flex items-center gap-2">
+              <img
+                src="/sahaningurmeleri-logo.png"
+                alt="Sahanın Gurmeleri"
+                className="h-9 w-auto"
+              />
+              <div>
+                <p className="text-md font-bold text-foreground leading-none tracking-wide">
+                  SAHANIN GURMELERİ
+                </p>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  Restoran Keşif Platformu
+                </p>
+              </div>
             </div>
           </div>
 
