@@ -77,12 +77,20 @@ export function ReviewsListModal({
       ? []
       : users.filter((u) => u.name.toLowerCase().includes(replyMentionQuery.toLowerCase())).slice(0, 5);
 
-  const openReplyFor = (reviewId: string) => {
-    setReplyOpenFor(replyOpenFor === reviewId ? null : reviewId);
-    setReplyText("");
+  const openReplyFor = (reviewId: string, mentionName?: string) => {
+    const alreadyOpen = replyOpenFor === reviewId;
+    setReplyOpenFor(alreadyOpen && !mentionName ? null : reviewId);
+    setReplyText(mentionName ? `@${mentionName} ` : "");
     setReplyPhotoUrl("");
     setReplyUploadError("");
     setReplyMentionQuery(null);
+    if (mentionName) {
+      requestAnimationFrame(() => {
+        replyTextareaRef.current?.focus();
+        const pos = replyTextareaRef.current?.value.length ?? 0;
+        replyTextareaRef.current?.setSelectionRange(pos, pos);
+      });
+    }
   };
 
   const handleReplyTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -406,6 +414,15 @@ export function ReviewsListModal({
                               </button>
                             )}
                           </div>
+                        )}
+                        {user && (
+                          <button
+                            onClick={() => openReplyFor(r.id, rep.addedBy)}
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
+                          >
+                            <MessageCircle size={11} />
+                            Yanıtla
+                          </button>
                         )}
                       </div>
                     ))}
