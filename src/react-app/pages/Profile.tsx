@@ -242,7 +242,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 py-6 pb-20 sm:pb-6 space-y-5">
         <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
           <div className="space-y-5">
             <div className="bg-white rounded-xl border border-border p-5">

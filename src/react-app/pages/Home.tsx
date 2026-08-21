@@ -14,7 +14,19 @@ import { Search } from "lucide-react";
 
 export default function Home() {
   const { user } = useAuth();
-  const [activeView, setActiveView] = useState<"list" | "map">("list");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeView: "list" | "map" = searchParams.get("view") === "map" ? "map" : "list";
+  const setActiveView = (view: "list" | "map") => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (view === "map") next.set("view", "map");
+        else next.delete("view");
+        return next;
+      },
+      { replace: true }
+    );
+  };
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
   const [selectedRating, setSelectedRating] = useState("");
@@ -26,7 +38,6 @@ export default function Home() {
   const [reviewTarget, setReviewTarget] = useState<Restaurant | null>(null);
   const [viewReviewsTarget, setViewReviewsTarget] = useState<Restaurant | null>(null);
   const [highlightReviewId, setHighlightReviewId] = useState<string | null>(null);
-  const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     fetchRestaurants()
@@ -46,8 +57,30 @@ export default function Home() {
       setViewReviewsTarget(target);
       setHighlightReviewId(reviewId);
     }
-    setSearchParams({}, { replace: true });
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("restaurant");
+        next.delete("review");
+        return next;
+      },
+      { replace: true }
+    );
   }, [restaurants, searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (searchParams.get("add") === "1" && user?.role === "staff") {
+      setAddModalOpen(true);
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete("add");
+          return next;
+        },
+        { replace: true }
+      );
+    }
+  }, [searchParams, setSearchParams, user]);
 
   const filteredRestaurants = useMemo(() => {
     let result = [...restaurants];
@@ -157,7 +190,7 @@ export default function Home() {
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-20 sm:pb-6 space-y-5">
         {/* Filters */}
         <FilterBar
           searchQuery={searchQuery}

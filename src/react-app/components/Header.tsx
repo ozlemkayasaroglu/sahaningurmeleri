@@ -59,7 +59,7 @@ export function Header({ activeView, onViewChange, onAddClick }: HeaderProps) {
           </div>
 
           {/* View Toggle */}
-          <div className="flex items-center gap-1 p-1 bg-muted rounded-lg border border-border">
+          <div className="hidden sm:flex items-center gap-1 p-1 bg-muted rounded-lg border border-border">
             <button
               onClick={() => onViewChange("list")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
@@ -90,7 +90,7 @@ export function Header({ activeView, onViewChange, onAddClick }: HeaderProps) {
               <Button
                 onClick={onAddClick}
                 size="sm"
-                className="bg-green-500 text-white hover:bg-green-600 shadow-md hover:shadow-lg hover:scale-105 border-0 rounded-lg font-semibold"
+                className="hidden sm:inline-flex bg-green-500 text-white hover:bg-green-600 shadow-md hover:shadow-lg hover:scale-105 border-0 rounded-lg font-semibold"
               >
                 <Plus size={16} className="sm:mr-1.5" />
                 <span className="hidden sm:inline">Restoran Ekle</span>
@@ -102,7 +102,7 @@ export function Header({ activeView, onViewChange, onAddClick }: HeaderProps) {
             {user ? (
               <button
                 onClick={() => navigate("/profile")}
-                className="flex items-center gap-2.5 pl-3 border-l border-border hover:opacity-75 transition-opacity"
+                className="hidden sm:flex items-center gap-2.5 pl-3 border-l border-border hover:opacity-75 transition-opacity"
               >
                 {user.avatar_url ? (
                   <img
@@ -133,7 +133,7 @@ export function Header({ activeView, onViewChange, onAddClick }: HeaderProps) {
                 size="sm"
                 onClick={handleLogout}
                 disabled={loggingOut}
-                className="rounded-lg text-destructive border-destructive/30 hover:bg-destructive hover:text-white hover:border-destructive text-xs"
+                className="hidden sm:inline-flex rounded-lg text-destructive border-destructive/30 hover:bg-destructive hover:text-white hover:border-destructive text-xs"
               >
                 {" "}
                 {loggingOut ? (
