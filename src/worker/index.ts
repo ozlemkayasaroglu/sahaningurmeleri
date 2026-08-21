@@ -211,7 +211,7 @@ app.post("/api/auth/forgot-password", zValidator("json", ForgotPasswordSchema), 
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "Sahanın Gurmeleri <onboarding@resend.dev>",
+            from: "Sahanın Gurmeleri <noreply@hakanismakinalari.com>",
             to: [email],
             subject: "Şifre Sıfırlama Talebi",
             html: `<p>Merhaba,</p><p>Şifreni sıfırlamak için <a href="${resetLink}">bu bağlantıya</a> tıkla. Bağlantı 1 saat geçerlidir.</p><p>Bu talebi sen yapmadıysan bu e-postayı yok sayabilirsin.</p>`,
