@@ -41,24 +41,24 @@ export function Header({ activeView, onViewChange, onAddClick }: HeaderProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <img
               src="/hakanlogo.png"
               alt="Hakan Makina"
-              className="h-16 w-auto"
+              className="h-10 sm:h-16 w-auto shrink-0"
             />
-            <div className="hidden lg:block w-px h-8 bg-border" />
-            <div className="hidden lg:flex items-center gap-2">
+            <div className="w-px h-6 sm:h-8 bg-border shrink-0" />
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
               <img
                 src="/sahaningurmeleri-logo.png"
                 alt="Sahanın Gurmeleri"
-                className="h-9 w-auto"
+                className="h-6 sm:h-9 w-auto shrink-0"
               />
-              <div>
-                <p className="text-md font-bold text-foreground leading-none tracking-wide">
+              <div className="min-w-0">
+                <p className="text-[11px] sm:text-md font-bold text-foreground leading-none tracking-wide truncate">
                   SAHANIN GURMELERİ
                 </p>
-                <p className="text-sm text-muted-foreground mt-0.5">
+                <p className="hidden sm:block text-sm text-muted-foreground mt-0.5">
                   Restoran Keşif Platformu
                 </p>
               </div>
